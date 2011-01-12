@@ -7,7 +7,7 @@ When using git for your kernel:
 
 	apply-or-update-patches.sh \
 		-m git \
-		-s gt-i9000-jpx-or-your-model \
+		-s gt-i9000-froyo-jpx-or-your-model \
 		-d your/kernel/tree
 
 
@@ -17,6 +17,6 @@ When not using git for your kernel:
 
 	apply-or-update-patches.sh \
 		-m patch \
-		-s gt-i9000-jpx-or-your-model \
+		-s gt-i9000-froyo-jpx-or-your-model \
 		-d your/kernel/tree
 

@@ -20,3 +20,29 @@ When not using git for your kernel:
 		-s gt-i9000-froyo-jpx-or-your-model \
 		-d your/kernel/tree
 
+
+Once you have a running kernel, you get new sysfs controls available not only
+to Voodo App, but to any software running on the phone, without requiring
+root permissions for standard usage.
+
+
+CONFIG_SND_VOODOO
+	/sys/devices/virtual/misc/voodoo_sound/headphone_amplifier_level
+	0 to 62
+	read write as user
+
+	/sys/devices/virtual/misc/voodoo_sound/version
+	read only as user
+	0 to n
+
+CONFIG_SND_VOODOO_FM
+	/sys/devices/virtual/misc/voodoo_sound/fm_radio_headset_restore_bass
+	0 / 1
+	read write as user
+
+CONFIG_SND_VOODOO_DEBUG
+	/sys/devices/virtual/misc/voodoo_sound/wm8994_register_dump
+	read only as user
+
+	/sys/devices/virtual/misc/voodoo_sound/wm8994_write
+	write only as root

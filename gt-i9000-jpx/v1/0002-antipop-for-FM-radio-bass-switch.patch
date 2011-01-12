@@ -1,0 +1,45 @@
+From ff866f32405772733c18134d8dd5141db9e56146 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Mon, 10 Jan 2011 19:48:43 +0100
+Subject: [PATCH 2/3] antipop for FM radio bass switch
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+
+Signed-off-by: SIMOND François <francois@lienweb.fr>
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 81511e8..6b62603 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -66,6 +66,7 @@ void update_hpvol()
+ 
+ void update_fm_radio_headset_restore_bass()
+ {
++
+ 	if (fm_radio_headset_restore_bass)
+ 	{
+ 		// disable Sidetone high-pass filter designed for voice and not FM radio
+@@ -77,10 +78,14 @@ void update_fm_radio_headset_restore_bass()
+ 	}
+ 	else
+ 	{
++		// soft-mute this DAC
++		wm8994_write(codec_, WM8994_AIF2_DAC_FILTERS_1, 0x236);
++		msleep(180);
+ 		// default settings in GT-I9000 Froyo XXJPX kernel sources
+-		// TODO: antipopo
+ 		wm8994_write(codec_, WM8994_SIDETONE, 0x01c0);
+ 		wm8994_write(codec_, WM8994_AIF2_ADC_FILTERS, 0xF800);
++		// un-mute
++		wm8994_write(codec_, WM8994_AIF2_DAC_FILTERS_1, 0x036);
+ 	}
+ }
+ 
+-- 
+1.7.1
+

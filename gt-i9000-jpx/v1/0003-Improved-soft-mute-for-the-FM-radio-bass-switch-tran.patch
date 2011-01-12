@@ -1,0 +1,86 @@
+From f1b42bbcae54ddc1d72d6a627bbefc8d7b0cea8b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Mon, 10 Jan 2011 22:10:47 +0100
+Subject: [PATCH 3/3] Improved soft-mute for the FM radio bass switch transition
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+
+Signed-off-by: SIMOND François <francois@lienweb.fr>
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   21 +++++++++++++--------
+ Kernel/sound/soc/codecs/wm8994_voodoo.h |    2 +-
+ 2 files changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 6b62603..6c5a2d5 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -64,8 +64,13 @@ void update_hpvol()
+ }
+ 
+ 
+-void update_fm_radio_headset_restore_bass()
++void update_fm_radio_headset_restore_bass(bool with_mute)
+ {
++	if (with_mute)
++	{
++		wm8994_write(codec_, WM8994_AIF2_DAC_FILTERS_1, 0x236);
++		msleep(180);
++	}
+ 
+ 	if (fm_radio_headset_restore_bass)
+ 	{
+@@ -78,15 +83,14 @@ void update_fm_radio_headset_restore_bass()
+ 	}
+ 	else
+ 	{
+-		// soft-mute this DAC
+-		wm8994_write(codec_, WM8994_AIF2_DAC_FILTERS_1, 0x236);
+-		msleep(180);
+ 		// default settings in GT-I9000 Froyo XXJPX kernel sources
+ 		wm8994_write(codec_, WM8994_SIDETONE, 0x01c0);
+ 		wm8994_write(codec_, WM8994_AIF2_ADC_FILTERS, 0xF800);
+-		// un-mute
+-		wm8994_write(codec_, WM8994_AIF2_DAC_FILTERS_1, 0x036);
+ 	}
++
++	// un-mute
++	if (with_mute)
++		wm8994_write(codec_, WM8994_AIF2_DAC_FILTERS_1, 0x036);
+ }
+ 
+ 
+@@ -131,7 +135,8 @@ static ssize_t fm_radio_headset_restore_bass_store(struct device *dev, struct de
+ 			fm_radio_headset_restore_bass = false;
+ 		else
+ 			fm_radio_headset_restore_bass = true;
+-		update_fm_radio_headset_restore_bass();
++
++		update_fm_radio_headset_restore_bass(true);
+ 	}
+ 	return size;
+ }
+@@ -257,7 +262,7 @@ void voodoo_hook_fmradio_headset()
+ 		return;
+ 
+ 	printk("Voodoo sound: correct FM radio sound output\n");
+-	update_fm_radio_headset_restore_bass();
++	update_fm_radio_headset_restore_bass(false);
+ #endif
+ }
+ 
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.h b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+index 1b239c0..6091a35 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.h
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+@@ -10,4 +10,4 @@ void voodoo_hook_fmradio_headset(void);
+ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int reg, unsigned int value);
+ void voodoo_hook_wm8994_pcm_probe(struct snd_soc_codec *codec);
+ void update_hpvol(void);
+-void update_fm_radio_headset_restore_bass(void);
++void update_fm_radio_headset_restore_bass(bool with_mute);
+-- 
+1.7.1
+

@@ -2,9 +2,10 @@ This repo contains Voodoo sound kernel patches
 
 How to apply those patches or keep your kernel up-to-date.
 
+
 When using git for your kernel:
 
-	./apply-or-update-patches.sh \
+	apply-or-update-patches.sh \
 		-m git \
 		-s gt-i9000-jpx-or-your-model \
 		-d your/kernel/tree
@@ -14,7 +15,7 @@ When using git for your kernel:
 When not using git for your kernel:
 	- I invite you to try it; really worth it ;)
 
-	./apply-or-update-patches.sh \
+	apply-or-update-patches.sh \
 		-m patch \
 		-s gt-i9000-jpx-or-your-model \
 		-d your/kernel/tree

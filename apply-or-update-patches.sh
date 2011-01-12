@@ -8,25 +8,14 @@ while getopts "m:s:d:" opt
 do
 	case "$opt" in
 		m) method="$OPTARG";;
-		s) patchs_source=`readlink -f "$my_pwd/$OPTARG"`;;
+		s)
+			patchs_name=$OPTARG
+			patchs_source=`readlink -f "$my_pwd/$patchs_name"`
+		;;
 		d) dest_kernel=`readlink -f "$OPTARG"`;;
 	esac
 done
 
-patch_apply()
-{
-	cd $dest_kernel || exit 1
-	for x in $patchs_source/*.patch; do
-		echo -e "for $x:"
-
-		if patch -p1 --forward --dry-run < "$x" > /dev/null 2>&1; then 
-			patch -p1 --forward --reject-file=- < "$x"
-		else
-			echo "patch does not apply: is probably already applied"
-		fi
-		echo 
-	done
-}
 
 apply()
 {
@@ -34,8 +23,8 @@ apply()
 		test_patch() { git apply --check $1 ;}
 		merge_patch() { git am $1 ;}
 	else
-		test_patch() { patch -p1 --dry-run -i $1 ;}
-		merge_patch() { patch -p1 < $1 ;}
+		test_patch() { patch -p$strip --dry-run --reject-file=- < $1 ;}
+		merge_patch() { patch -p$strip < $1 ;}
 	fi
 	
 	cd $dest_kernel || exit 1
@@ -63,9 +52,9 @@ error_with_message()
 
 
 echo -e "\nScript directory:	$my_pwd"
-echo "Method:			$method"
-echo "Patchs source:		$patchs_source"
 echo "Kernel directory:	$dest_kernel"
+echo "Method:			$method"
+echo "Patchs for:		$patchs_name"
 
 if test "$method" != "git" && test "$method" != "patch"; then
 	error_with_message "Please specify a method to apply Voodoo sound patches: -m git or -m patch"
@@ -80,15 +69,29 @@ if test "$method" = git; then
 	fi
 fi
 
-if ! test -n "$patchs_source" || ! test -d "$patchs_source"; then
-	error_with_message "Please specify a patch source name: -s patchs-for-your-kernel"
+if test -d "$patchs_source" && ! test -n `ls "$patchs_source/v*" 2>/dev/null` ; then
+	echo -e "\navailable: "
+	available_list=`find $my_pwd/* -maxdepth 0 -type d | grep -v '.git'`
+	for x in $available_list; do
+		echo "  `basename $x`"
+	done
+	error_with_message "\nPlease specify a patch source name: -s patchs-for-your-kernel"
 fi
+
 if ! test -n "$dest_kernel" || ! test -d "$dest_kernel"; then
 	error_with_message "Please specify a kernel source directory: -d your/kernel/tree"
 fi
 
+# detect if the kernel sources are in the destination folder or in Kernel/
+if test -d "$dest_kernel/Kernel"; then
+	kernel_subdir="Kernel"
+	strip=1
+else
+	strip=2
+fi
+
 # read the Voodoo sound current version in kernel
-version=`grep "#define VOODOO_SOUND_VERSION 1" Kernel/sound/soc/codecs/wm8994_voodoo.c 2>/dev/null | cut -d' ' -f3`
+version=`grep "#define VOODOO_SOUND_VERSION 1" ./$kernel_subdir/sound/soc/codecs/wm8994_voodoo.c 2>/dev/null | cut -d' ' -f3`
 patches_version=`ls -1v $patchs_source | tail -1 | tr -d v`
 
 versions_to_apply=`seq -s ' ' $((version + 1)) $patches_version`

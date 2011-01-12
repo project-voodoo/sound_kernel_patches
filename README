@@ -40,9 +40,10 @@ CONFIG_SND_VOODOO_FM
 	0 / 1
 	read write as user
 
-CONFIG_SND_VOODOO_DEBUG
+CONFIG_SND_VOODOO_DEBUG (never enable this for kernel released to public)
 	/sys/devices/virtual/misc/voodoo_sound/wm8994_register_dump
 	read only as user
 
 	/sys/devices/virtual/misc/voodoo_sound/wm8994_write
 	write only as root
+	DANGEROUS !

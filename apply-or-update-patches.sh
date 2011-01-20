@@ -69,7 +69,7 @@ if test "$method" = git; then
 	fi
 fi
 
-if test -d "$patchs_source" && ! test -n `ls "$patchs_source/v*" 2>/dev/null` ; then
+if ! test -n "$patchs_name" || ! test -d "$patchs_source" || ! test -n `ls "$patchs_source/v*" 2>/dev/null` ; then
 	echo -e "\navailable: "
 	available_list=`find $my_pwd/* -maxdepth 0 -type d | grep -v '.git'`
 	for x in $available_list; do

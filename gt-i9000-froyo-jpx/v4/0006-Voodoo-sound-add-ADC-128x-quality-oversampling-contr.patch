@@ -1,0 +1,116 @@
+From 41010684b383126c386ee54b4fb689476e048812 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Sun, 30 Jan 2011 22:45:53 +0100
+Subject: [PATCH 6/7] Voodoo sound: add ADC 128x quality oversampling control
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   34 ++++++++++++++++++++++++++----
+ Kernel/sound/soc/codecs/wm8994_voodoo.h |    2 +-
+ 2 files changed, 30 insertions(+), 6 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 976d4d2..0183b94 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -44,6 +44,7 @@ unsigned short recording_preset = 1;
+ #endif
+ 
+ bool dac_osr128 = true;
++bool adc_osr128 = false;
+ bool fll_tuning = false;
+ bool mono_downmix = false;
+ 
+@@ -210,19 +211,24 @@ void update_recording_preset()
+ #endif
+ 
+ 
+-unsigned short dac_osr128_get_value(unsigned short val)
++unsigned short osr128_get_value(unsigned short val)
+ {
+ 	if (dac_osr128 == 1)
+ 		val |= WM8994_DAC_OSR128;
+ 	else
+ 		val &= ~WM8994_DAC_OSR128;
++
++	if (adc_osr128 == 1)
++		val |= WM8994_ADC_OSR128;
++	else
++		val &= ~WM8994_ADC_OSR128;
+ 	return val;
+ }
+ 
+-void update_dac_osr128()
++void update_osr128()
+ {
+ 	unsigned short val;
+-	val = dac_osr128_get_value(wm8994_read(codec_, WM8994_OVERSAMPLING));
++	val = osr128_get_value(wm8994_read(codec_, WM8994_OVERSAMPLING));
+ 	bypass_write_hook = true;
+ 	wm8994_write(codec_, WM8994_OVERSAMPLING, val);
+ 	bypass_write_hook = false;
+@@ -377,7 +383,23 @@ static ssize_t dac_osr128_store(struct device *dev, struct device_attribute *att
+ 	if (sscanf(buf, "%hu", &state) == 1)
+ 	{
+ 		dac_osr128 = state == 0 ? false : true;
+-		update_dac_osr128();
++		update_osr128();
++	}
++	return size;
++}
++
++static ssize_t adc_osr128_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf,"%u\n",(adc_osr128 ? 1 : 0));
++}
++
++static ssize_t adc_osr128_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
++{
++	unsigned short state;
++	if (sscanf(buf, "%hu", &state) == 1)
++	{
++		adc_osr128 = state == 0 ? false : true;
++		update_osr128();
+ 	}
+ 	return size;
+ }
+@@ -505,6 +527,7 @@ static DEVICE_ATTR(fm_radio_headset_normalize_gain, S_IRUGO | S_IWUGO , fm_radio
+ static DEVICE_ATTR(recording_preset, S_IRUGO | S_IWUGO , recording_preset_show, recording_preset_store);
+ #endif
+ static DEVICE_ATTR(dac_osr128, S_IRUGO | S_IWUGO , dac_osr128_show, dac_osr128_store);
++static DEVICE_ATTR(adc_osr128, S_IRUGO | S_IWUGO , adc_osr128_show, adc_osr128_store);
+ static DEVICE_ATTR(fll_tuning, S_IRUGO | S_IWUGO , fll_tuning_show, fll_tuning_store);
+ static DEVICE_ATTR(mono_downmix, S_IRUGO | S_IWUGO , mono_downmix_show, mono_downmix_store);
+ #ifdef CONFIG_SND_VOODOO_DEBUG
+@@ -526,6 +549,7 @@ static struct attribute *voodoo_sound_attributes[] = {
+ 		&dev_attr_recording_preset.attr,
+ #endif
+ 		&dev_attr_dac_osr128.attr,
++		&dev_attr_adc_osr128.attr,
+ 		&dev_attr_fll_tuning.attr,
+ 		&dev_attr_mono_downmix.attr,
+ #ifdef CONFIG_SND_VOODOO_DEBUG
+@@ -593,7 +617,7 @@ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int
+ 		}
+ #endif
+ 		if (reg == WM8994_OVERSAMPLING)
+-			value = dac_osr128_get_value(value);
++			value = osr128_get_value(value);
+ 		if (reg == WM8994_FLL1_CONTROL_4)
+ 			value = fll_tuning_get_value(value);
+ 		if (reg == WM8994_AIF1_DAC1_FILTERS_1 || reg == WM8994_AIF1_DAC2_FILTERS_1 || reg == WM8994_AIF2_DAC_FILTERS_1)
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.h b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+index 73e5895..0b8e63e 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.h
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+@@ -16,7 +16,7 @@ void update_fm_radio_headset_restore_freqs(bool with_mute);
+ void update_fm_radio_headset_normalize_gain(void);
+ void update_recording_preset(void);
+ void update_full_bitwidth(bool with_mute);
+-void update_dac_osr128(void);
++void update_osr128(void);
+ void update_fll_tuning(void);
+ unsigned short tune_fll_value(unsigned short val);
+ void update_mono_downmix(void);
+-- 
+1.7.1
+

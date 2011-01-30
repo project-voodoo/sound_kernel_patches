@@ -1,0 +1,103 @@
+From bca4c93bf547ccffea1df240e77e0b2447482f18 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Sun, 30 Jan 2011 21:12:57 +0100
+Subject: [PATCH 4/7] Voodoo sound: remove full_bitwidth SNR booster option (killer samples expose artifacts)
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   45 -------------------------------
+ 1 files changed, 0 insertions(+), 45 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index c6557c5..f77acbb 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -43,7 +43,6 @@ bool fm_radio_headset_normalize_gain = true;
+ unsigned short recording_preset = 1;
+ #endif
+ 
+-bool full_bitwidth = false;
+ bool dac_osr128 = true;
+ bool fll_tuning = false;
+ bool mono_downmix = false;
+@@ -200,30 +199,6 @@ void update_recording_preset()
+ }
+ #endif
+ 
+-void update_full_bitwidth(bool with_mute)
+-{
+-	if (with_mute)
+-	{
+-		wm8994_write(codec_, WM8994_AIF1_DAC1_FILTERS_1, 0x230);
+-		msleep(180);
+-	}
+-
+-	if (full_bitwidth == 1)
+-	{
+-		// +1.5dB SNR restoring the full DRC Gain
+-		// DRC Input: -1.5dB, Ouptut 0dB
+-		wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x0094);
+-		wm8994_write(codec_, WM8994_AIF1_DRC1_4, 0x0040);
+-	}
+-	else
+-		// disable DRC
+-		wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x0098);
+-		// un-mute
+-
+-	if (with_mute)
+-		wm8994_write(codec_, WM8994_AIF1_DAC1_FILTERS_1, 0x030);
+-}
+-
+ 
+ unsigned short dac_osr128_get_value(unsigned short val)
+ {
+@@ -381,23 +356,6 @@ static ssize_t recording_preset_store(struct device *dev, struct device_attribut
+ #endif
+ 
+ 
+-static ssize_t full_bitwidth_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	return sprintf(buf,"%u\n",(full_bitwidth ? 1 : 0));
+-}
+-
+-static ssize_t full_bitwidth_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+-{
+-	unsigned short state;
+-	if (sscanf(buf, "%hu", &state) == 1)
+-	{
+-		full_bitwidth = state == 0 ? false : true;
+-		update_full_bitwidth(true);
+-	}
+-	return size;
+-}
+-
+-
+ static ssize_t dac_osr128_show(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+ 	return sprintf(buf,"%u\n",(dac_osr128 ? 1 : 0));
+@@ -536,7 +494,6 @@ static DEVICE_ATTR(fm_radio_headset_normalize_gain, S_IRUGO | S_IWUGO , fm_radio
+ #ifdef CONFIG_SND_VOODOO_RECORD_PRESETS
+ static DEVICE_ATTR(recording_preset, S_IRUGO | S_IWUGO , recording_preset_show, recording_preset_store);
+ #endif
+-static DEVICE_ATTR(full_bitwidth, S_IRUGO | S_IWUGO , full_bitwidth_show, full_bitwidth_store);
+ static DEVICE_ATTR(dac_osr128, S_IRUGO | S_IWUGO , dac_osr128_show, dac_osr128_store);
+ static DEVICE_ATTR(fll_tuning, S_IRUGO | S_IWUGO , fll_tuning_show, fll_tuning_store);
+ static DEVICE_ATTR(mono_downmix, S_IRUGO | S_IWUGO , mono_downmix_show, mono_downmix_store);
+@@ -558,7 +515,6 @@ static struct attribute *voodoo_sound_attributes[] = {
+ #ifdef CONFIG_SND_VOODOO_RECORD_PRESETS
+ 		&dev_attr_recording_preset.attr,
+ #endif
+-		&dev_attr_full_bitwidth.attr,
+ 		&dev_attr_dac_osr128.attr,
+ 		&dev_attr_fll_tuning.attr,
+ 		&dev_attr_mono_downmix.attr,
+@@ -607,7 +563,6 @@ void voodoo_hook_record_main_mic()
+ 
+ void voodoo_hook_playback_headset()
+ {
+-	update_full_bitwidth(false);
+ }
+ 
+ 
+-- 
+1.7.1
+

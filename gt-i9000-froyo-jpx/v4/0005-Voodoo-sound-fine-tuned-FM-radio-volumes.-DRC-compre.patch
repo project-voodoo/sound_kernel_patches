@@ -1,0 +1,43 @@
+From 0564c4e02542540defe9aa981c26a12ee76f5ae8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Sun, 30 Jan 2011 22:12:18 +0100
+Subject: [PATCH 5/7] Voodoo sound: fine-tuned FM radio volumes. DRC compress only to prevent saturation in non-standard case
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index f77acbb..976d4d2 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -127,14 +127,24 @@ void update_fm_radio_headset_normalize_gain()
+ 	if (fm_radio_headset_normalize_gain)
+ 	{
+ 		// Bumped volume, change with Zero Cross
+-		wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_3_4_VOLUME, 0x4F);
+-		wm8994_write(codec_, WM8994_RIGHT_LINE_INPUT_3_4_VOLUME, 0x14F);
++		wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_3_4_VOLUME, 0x52);
++		wm8994_write(codec_, WM8994_RIGHT_LINE_INPUT_3_4_VOLUME, 0x152);
++		wm8994_write(codec_, WM8994_AIF2_DRC_2, 0x0840);
++		wm8994_write(codec_, WM8994_AIF2_DRC_3, 0x2408);
++		wm8994_write(codec_, WM8994_AIF2_DRC_4, 0x0082);
++		wm8994_write(codec_, WM8994_AIF2_DRC_5, 0x0100);
++		wm8994_write(codec_, WM8994_AIF2_DRC_1, 0x019C);
+ 	}
+ 	else
+ 	{
+ 		// Original volume, change with Zero Cross
+ 		wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_3_4_VOLUME, 0x4B);
+ 		wm8994_write(codec_, WM8994_RIGHT_LINE_INPUT_3_4_VOLUME, 0x14B);
++		wm8994_write(codec_, WM8994_AIF2_DRC_2, 0x0840);
++		wm8994_write(codec_, WM8994_AIF2_DRC_3, 0x2400);
++		wm8994_write(codec_, WM8994_AIF2_DRC_4, 0x0000);
++		wm8994_write(codec_, WM8994_AIF2_DRC_5, 0x0000);
++		wm8994_write(codec_, WM8994_AIF2_DRC_1, 0x019C);
+ 	}
+ }
+ #endif
+-- 
+1.7.1
+

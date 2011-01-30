@@ -1,0 +1,25 @@
+From f85b432c5b915a7233c91d24c2a731e0a9078c60 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Sun, 30 Jan 2011 22:59:13 +0100
+Subject: [PATCH 7/7] Voodoo sound: driver version 4
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 0183b94..e9bce9a 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -24,7 +24,7 @@
+ #include "wm8994_voodoo.h"
+ 
+ #define SUBJECT "wm8994_voodoo.c"
+-#define VOODOO_SOUND_VERSION 3
++#define VOODOO_SOUND_VERSION 4
+ 
+ bool bypass_write_hook = false;
+ 
+-- 
+1.7.1
+

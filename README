@@ -1,3 +1,13 @@
+THIS REPOSITORY IS NOW OBSOLETE
+
+please follow the -voodoo-sound branches for the kernel matching your device
+fom https://github.com/project-voodoo, like:
+https://github.com/project-voodoo/linux_samsung/tree/nexus-s-voodoo-sound
+
+If you don't know or use git yet, it's time! :)
+
+--------------------------------------------------------------------------------
+
 This repo contains Voodoo sound kernel patches
 
 How to apply those patches or keep your kernel up-to-date.

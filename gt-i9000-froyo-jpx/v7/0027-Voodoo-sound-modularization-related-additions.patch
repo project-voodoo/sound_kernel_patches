@@ -1,0 +1,74 @@
+From 1e8396e0df65ee465856ad8c2572912ba124148e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Mon, 21 Mar 2011 13:58:20 +0100
+Subject: [PATCH 27/33] Voodoo sound: modularization-related additions
+
+---
+ Kernel/sound/soc/codecs/Kconfig.voodoo  |    8 ++++++++
+ Kernel/sound/soc/codecs/Makefile        |    4 ++++
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   18 ++++++++++++++++++
+ 3 files changed, 30 insertions(+), 0 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/Kconfig.voodoo b/Kernel/sound/soc/codecs/Kconfig.voodoo
+index af418fb..5f85148 100644
+--- a/Kernel/sound/soc/codecs/Kconfig.voodoo
++++ b/Kernel/sound/soc/codecs/Kconfig.voodoo
+@@ -44,6 +44,14 @@ config SND_VOODOO_FM
+ 	help
+ 	  Adds a control to enable or disable the high-pass filter on FM radio
+ 
++
++config SND_VOODOO_MODULE
++	tristate "Build also as module (incomplete)"
++	depends on SND_VOODOO && m
++	default n
++	help
++	  requires additionnal source
++
+ config SND_VOODOO_DEBUG
+ 	bool "Codec development tools (unsafe and introduce sound skipping)"
+ 	depends on SND_VOODOO
+diff --git a/Kernel/sound/soc/codecs/Makefile b/Kernel/sound/soc/codecs/Makefile
+index d45daa6..0c80b70 100644
+--- a/Kernel/sound/soc/codecs/Makefile
++++ b/Kernel/sound/soc/codecs/Makefile
+@@ -107,3 +107,7 @@ obj-$(CONFIG_SND_SOC_WM_HUBS)	+= snd-soc-wm-hubs.o
+ 
+ # Amp
+ obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o
++
++ifeq ($(CONFIG_SND_VOODOO_MODULE),m)
++obj-$(CONFIG_SND_VOODOO_MODULE)	+= voodoo-sound-tegrak-module/
++endif
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 6067550..edda660 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -23,6 +23,24 @@
+ #define SUBJECT "wm8994_voodoo.c"
+ #define VOODOO_SOUND_VERSION 6
+ 
++
++#ifdef MODULE
++#include "tegrak_voodoo_sound.h"
++
++// wm8994_write -> tegrak_wm8994_write for dynamic link
++#ifdef wm8994_write
++#undef wm8994_write
++#endif
++
++// wm8994_read -> tegrak_wm8994_read for dynamic link
++#ifdef wm8994_read
++#undef wm8994_read
++#endif
++#define wm8994_write(codec, reg, value) tegrak_wm8994_write(codec, reg, value)
++#define wm8994_read(codec, reg) tegrak_wm8994_read(codec, reg)
++#endif
++
++
+ bool bypass_write_hook = false;
+ 
+ #ifdef CONFIG_SND_VOODOO_HP_LEVEL_CONTROL
+-- 
+1.7.4.3
+

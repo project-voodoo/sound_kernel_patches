@@ -1,0 +1,100 @@
+From 9be15b53830db468cbff58a01ac06535649f70e1 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Wed, 23 Mar 2011 02:18:05 +0100
+Subject: [PATCH 28/33] Voodoo sound: increase path management granularity using codec and stream active status
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   31 ++++++++++++++++++++-----------
+ 1 files changed, 20 insertions(+), 11 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index edda660..297dc33 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -348,9 +348,9 @@ bool is_path(int unified_path)
+ 			return false;
+ #else
+ #ifdef GALAXY_TAB
+-			return (wm8994->fmradio_path == FMR_HP);
++			return (wm8994->codec_state & FMRADIO_ACTIVE) && (wm8994->fmradio_path == FMR_HP);
+ #else
+-			return (wm8994->fmradio_path == FMR_HP);
++			return (wm8994->codec_state & FMRADIO_ACTIVE) && (wm8994->fmradio_path == FMR_HP);;
+ #endif
+ #endif
+ #endif
+@@ -360,7 +360,7 @@ bool is_path(int unified_path)
+ 		// FIXME: be sure dac_direct doesn't break phone calls on TAB
+ 		// with these spath detection settings (HP4P)
+ 		case MAIN_MICROPHONE:
+-			return (wm8994->rec_path == MAIN);
++			return (wm8994->codec_state & CAPTURE_ACTIVE) && (wm8994->rec_path == MAIN);
+ 
+ 	}
+ 	return false;
+@@ -369,7 +369,8 @@ bool is_path(int unified_path)
+ #ifdef NEXUS_S
+ void update_speaker_tuning(bool with_mute)
+ {
+-	if (is_path(SPEAKER))
++	DECLARE_WM8994(codec_)
++	if (is_path(SPEAKER) && !(wm8994->codec_state & CALL_ACTIVE))
+ 	{
+ 		printk("We are on speaker!\n");
+ 		if (speaker_tuning)
+@@ -503,7 +504,12 @@ void update_mono_downmix(bool with_mute)
+ 
+ unsigned short dac_direct_get_value(unsigned short val)
+ {
+-	if (is_path(HEADPHONES))
++	DECLARE_WM8994(codec_)
++
++	if (is_path(HEADPHONES) &&
++		(wm8994->codec_state & PLAYBACK_ACTIVE) &&
++		!(wm8994->codec_state & CALL_ACTIVE) &&
++		!(wm8994->stream_state & PCM_STREAM_PLAYBACK))
+ 	{
+ 		if (dac_direct)
+ 			val = (val == WM8994_DAC1L_TO_MIXOUTL) ? WM8994_DAC1L_TO_HPOUT1L : val;
+@@ -866,9 +872,7 @@ void voodoo_hook_playback_speaker()
+ 
+ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int reg, unsigned int value)
+ {
+-#ifdef CONFIG_SND_VOODOO_DEBUG_LOG
+ 	DECLARE_WM8994(codec)
+-#endif
+ 
+ 	// global kill switch
+ 	if (! enable)
+@@ -882,7 +886,7 @@ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int
+ 	{
+ 
+ #ifdef CONFIG_SND_VOODOO_HP_LEVEL_CONTROL
+-		if (is_path(HEADPHONES))
++		if (is_path(HEADPHONES) && !(wm8994->codec_state & CALL_ACTIVE))
+ 		{
+ 			if (reg == WM8994_LEFT_OUTPUT_VOLUME)
+ 				value = (WM8994_HPOUT1_VU | WM8994_HPOUT1L_MUTE_N | hplvol);
+@@ -913,11 +917,16 @@ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int
+ 	// log every write to dmesg
+ 	printk("Voodoo sound: wm8994_write register= [%X] value= [%X]\n", reg, value);
+ #ifdef NEXUS_S
+-	printk("Voodoo sound: cur_path=%i, rec_path=%i, power_state=%i\n",
++	printk("Voodoo sound: codec_state=%u, stream_state=%u, cur_path=%i, rec_path=%i, power_state=%i\n",
++		wm8994->codec_state, wm8994->stream_state,
+ 		wm8994->cur_path, wm8994->rec_path, wm8994->power_state);
+ #else
+-	printk("Voodoo sound: cur_path=%i, rec_path=%i, fmradio_path=%i, fmr_mix_path=%i, power_state=%i, recognition_active=%i, ringtone_active=%i\n",
+-		wm8994->cur_path, wm8994->rec_path, wm8994->fmradio_path, wm8994->fmr_mix_path, wm8994->power_state, wm8994->recognition_active, wm8994->ringtone_active);
++	printk("Voodoo sound: codec_state=%u, stream_state=%u, cur_path=%i, rec_path=%i, fmradio_path=%i, fmr_mix_path=%i, power_state=%i, recognition_active=%i, ringtone_active=%i\n",
++		wm8994->codec_state, wm8994->stream_state,
++		wm8994->cur_path, wm8994->rec_path,
++		wm8994->fmradio_path, wm8994->fmr_mix_path,
++		wm8994->power_state,
++		wm8994->recognition_active, wm8994->ringtone_active);
+ #endif
+ #endif
+ 	return value;
+-- 
+1.7.4.3
+

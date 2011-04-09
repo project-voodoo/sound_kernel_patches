@@ -1,0 +1,34 @@
+From 76e50dbaa42480d42ac3f08b18da0bb839142ab9 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Mon, 28 Mar 2011 06:04:43 +0200
+Subject: [PATCH 32/33] Voodoo sound: fix typos
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 4b11157..af5f1c2 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -363,7 +363,7 @@ void update_speaker_tuning(bool with_mute)
+ {
+ 	DECLARE_WM8994(codec);
+ 
+-	if (!(is_path(SPEAKER) || (wm8994->codecstate & CALL_ACTIVE)))
++	if (!(is_path(SPEAKER) || (wm8994->codec_state & CALL_ACTIVE)))
+ 		return;
+ 
+ 	printk("We are on speaker!\n");
+@@ -957,7 +957,7 @@ void voodoo_hook_playback_speaker()
+ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec_,
+ 				      unsigned int reg, unsigned int value)
+ {
+-	DECLARE_WM8994(codec);
++	DECLARE_WM8994(codec_);
+ 
+ 	// global kill switch
+ 	if (!enable)
+-- 
+1.7.4.3
+

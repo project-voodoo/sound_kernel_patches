@@ -1,0 +1,256 @@
+From 41a3db0579a0ae86e1241136442d4ea54c8b3bc4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Mon, 21 Mar 2011 13:52:18 +0100
+Subject: [PATCH 26/33] Voodoo sound: refactoring for modularization
+
+---
+ Kernel/sound/soc/codecs/wm8994_aries.c  |   15 --------
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   54 ++++++++++++++++++++++++++++---
+ Kernel/sound/soc/codecs/wm8994_voodoo.h |    2 +-
+ 3 files changed, 50 insertions(+), 21 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_aries.c b/Kernel/sound/soc/codecs/wm8994_aries.c
+index 417a796..8c37924 100644
+--- a/Kernel/sound/soc/codecs/wm8994_aries.c
++++ b/Kernel/sound/soc/codecs/wm8994_aries.c
+@@ -3820,9 +3820,6 @@ void wm8994_set_fmradio_common(struct snd_soc_codec *codec, int onoff)
+ 			wm8994_write(codec, WM8994_INPUT_MIXER_4, val);	
+ 		}
+ 	}		
+-#ifdef CONFIG_SND_VOODOO_FM
+-	voodoo_hook_fmradio_headset();
+-#endif
+ }
+ 
+ void wm8994_set_fmradio_headset(struct snd_soc_codec *codec)
+@@ -4075,10 +4072,6 @@ void wm8994_set_fmradio_headset(struct snd_soc_codec *codec)
+ 	//DAC1 Unmute
+ 	wm8994_write(codec, WM8994_AIF1_DAC1_FILTERS_1, 0x0000);
+ 
+-#ifdef CONFIG_SND_VOODOO_FM
+-	voodoo_hook_fmradio_headset();
+-#endif
+-
+ 	val = wm8994_read(codec, WM8994_AIF2_DAC_FILTERS_1);	//520 : 0
+ 	val &= ~(WM8994_AIF2DAC_MUTE_MASK);
+ 	wm8994_write(codec, WM8994_AIF2_DAC_FILTERS_1, val);
+@@ -4334,10 +4327,6 @@ void wm8994_set_fmradio_headset_mix(struct snd_soc_codec *codec)
+ 		val |= (WM8994_DAC1_VU | TUNING_DAC1L_VOL); 
+ 		wm8994_write(codec,WM8994_DAC1_LEFT_VOLUME ,val);
+ 		
+-#ifdef CONFIG_SND_VOODOO_FM
+-	voodoo_hook_fmradio_headset();
+-#endif
+-
+ 		//Unmute and volume ctrl RightDAC
+ 		val = wm8994_read(codec, WM8994_DAC1_RIGHT_VOLUME ); 
+ 		val &= ~(WM8994_DAC1R_MUTE_MASK | WM8994_DAC1R_VOL_MASK);
+@@ -4681,10 +4670,6 @@ void wm8994_set_fmradio_speaker_headset_mix(struct snd_soc_codec *codec)
+ 
+ 	msleep(20);
+ 
+-#ifdef CONFIG_SND_VOODOO_FM
+-	voodoo_hook_fmradio_headset();
+-#endif
+-
+ 	//* Headphone Output
+ 		// Intermediate HP settings
+ 	val = wm8994_read(codec, WM8994_ANALOGUE_HP_1); 	
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index d9bcb90..6067550 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -115,9 +115,10 @@ void update_hpvol()
+ void update_fm_radio_headset_restore_freqs(bool with_mute)
+ {
+ 	unsigned short val;
++	DECLARE_WM8994(codec_)
+ 
++	bypass_write_hook = true;
+ 	// apply only when FM radio is active
+-	DECLARE_WM8994(codec_)
+ 	if (wm8994->fmradio_path == FMR_OFF)
+ 		return;
+ 
+@@ -159,12 +160,15 @@ void update_fm_radio_headset_restore_freqs(bool with_mute)
+ 		val &= ~(WM8994_AIF2DAC_MUTE_MASK);
+ 		wm8994_write(codec_, WM8994_AIF2_DAC_FILTERS_1, val);
+ 	}
++	bypass_write_hook = false;
+ }
+ 
+ void update_fm_radio_headset_normalize_gain(bool with_mute)
+ {
+-	// apply only when FM radio is active
+ 	DECLARE_WM8994(codec_)
++
++	bypass_write_hook = true;
++	// apply only when FM radio is active
+ 	if (wm8994->fmradio_path == FMR_OFF)
+ 		return;
+ 
+@@ -190,6 +194,7 @@ void update_fm_radio_headset_normalize_gain(bool with_mute)
+ 		wm8994_write(codec_, WM8994_AIF2_DRC_5, 0x0000);
+ 		wm8994_write(codec_, WM8994_AIF2_DRC_1, 0x019C);
+ 	}
++	bypass_write_hook = false;
+ }
+ #endif
+ 
+@@ -316,6 +321,22 @@ bool is_path(int unified_path)
+ #endif
+ #endif
+ 
++		// FM Radio on headphones
++		case RADIO_HEADPHONES:
++#ifdef NEXUS_S
++			return false;
++#else
++#ifdef M110S
++			return false;
++#else
++#ifdef GALAXY_TAB
++			return (wm8994->fmradio_path == FMR_HP);
++#else
++			return (wm8994->fmradio_path == FMR_HP);
++#endif
++#endif
++#endif
++
+ 
+ 		// headphones
+ 		// FIXME: be sure dac_direct doesn't break phone calls on TAB
+@@ -644,6 +665,7 @@ static ssize_t voodoo_sound_version(struct device *dev, struct device_attribute
+ }
+ 
+ 
++#ifndef MODULE
+ DECLARE_BOOL_SHOW(enable)
+ static ssize_t enable_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+ {
+@@ -660,7 +682,7 @@ static ssize_t enable_store(struct device *dev, struct device_attribute *attr, c
+ 	}
+ 	return size;
+ }
+-
++#endif
+ 
+ #ifdef CONFIG_SND_VOODOO_HP_LEVEL_CONTROL
+ static DEVICE_ATTR(headphone_amplifier_level, S_IRUGO | S_IWUGO , headphone_amplifier_level_show, headphone_amplifier_level_store);
+@@ -687,7 +709,9 @@ static DEVICE_ATTR(wm8994_write, S_IWUSR , NULL, store_wm8994_write);
+ #endif
+ static DEVICE_ATTR(version, S_IRUGO , voodoo_sound_version, NULL);
+ 
++#ifndef MODULE
+ static DEVICE_ATTR(enable, S_IRUGO | S_IWUGO , enable_show, enable_store);
++#endif
+ 
+ static struct attribute *voodoo_sound_attributes[] = {
+ #ifdef CONFIG_SND_VOODOO_HP_LEVEL_CONTROL
+@@ -717,29 +741,34 @@ static struct attribute *voodoo_sound_attributes[] = {
+ 		NULL
+ };
+ 
++#ifndef MODULE
+ static struct attribute *voodoo_sound_control_attributes[] = {
+ 		&dev_attr_enable.attr,
+ 		NULL
+ };
++#endif
+ 
+ static struct attribute_group voodoo_sound_group = {
+ 		.attrs  = voodoo_sound_attributes,
+ };
+ 
++#ifndef MODULE
+ static struct attribute_group voodoo_sound_control_group = {
+ 		.attrs  = voodoo_sound_control_attributes,
+ };
++#endif
+ 
+ static struct miscdevice voodoo_sound_device = {
+ 		.minor = MISC_DYNAMIC_MINOR,
+ 		.name = "voodoo_sound",
+ };
+ 
++#ifndef MODULE
+ static struct miscdevice voodoo_sound_control_device = {
+ 		.minor = MISC_DYNAMIC_MINOR,
+ 		.name = "voodoo_sound_control",
+ };
+-
++#endif
+ 
+ void voodoo_hook_wm8994_pcm_remove() {
+ 	printk("Voodoo sound: removing driver v%d\n", VOODOO_SOUND_VERSION);
+@@ -764,7 +793,6 @@ void update_enable()
+ 		voodoo_hook_wm8994_pcm_remove();
+ }
+ 
+-
+ /*
+  *
+  * Driver Hooks
+@@ -820,6 +848,10 @@ void voodoo_hook_playback_speaker()
+ 
+ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int reg, unsigned int value)
+ {
++#ifdef CONFIG_SND_VOODOO_DEBUG_LOG
++	DECLARE_WM8994(codec)
++#endif
++
+ 	// global kill switch
+ 	if (! enable)
+ 		return value;
+@@ -830,6 +862,7 @@ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int
+ 
+ 	if (! bypass_write_hook)
+ 	{
++
+ #ifdef CONFIG_SND_VOODOO_HP_LEVEL_CONTROL
+ 		if (is_path(HEADPHONES))
+ 		{
+@@ -839,6 +872,15 @@ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int
+ 				value = (WM8994_HPOUT1_VU | WM8994_HPOUT1R_MUTE_N | hprvol);
+ 		}
+ #endif
++
++#ifdef CONFIG_SND_VOODOO_FM
++		if (is_path(RADIO_HEADPHONES))
++		{
++			if (reg == WM8994_INPUT_MIXER_2 || reg == WM8994_AIF2_DRC_1 || reg == WM8994_ANALOGUE_HP_1)
++				voodoo_hook_fmradio_headset();
++		}
++#endif
++
+ 		if (reg == WM8994_OVERSAMPLING)
+ 			value = osr128_get_value(value);
+ 		if (reg == WM8994_FLL1_CONTROL_4)
+@@ -869,12 +911,14 @@ void voodoo_hook_wm8994_pcm_probe(struct snd_soc_codec *codec)
+ 	enable = true;
+ 	update_enable();
+ 
++#ifndef MODULE
+ 	misc_register(&voodoo_sound_control_device);
+ 	if (sysfs_create_group(&voodoo_sound_control_device.this_device->kobj, &voodoo_sound_control_group) < 0)
+ 	{
+ 		printk("%s sysfs_create_group fail\n", __FUNCTION__);
+ 		pr_err("Failed to create sysfs group for device (%s)!\n", voodoo_sound_control_device.name);
+ 	}
++#endif
+ 
+ 	// make a copy of the codec pointer
+ 	codec_ = codec;
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.h b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+index e7a31b0..bb87c68 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.h
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+@@ -37,4 +37,4 @@ unsigned short tune_fll_value(unsigned short val);
+ #define M110S
+ #endif
+ 
+-enum unified_path { HEADPHONES, SPEAKER, MAIN_MICROPHONE };
++enum unified_path { HEADPHONES, RADIO_HEADPHONES, SPEAKER, MAIN_MICROPHONE };
+-- 
+1.7.4.3
+

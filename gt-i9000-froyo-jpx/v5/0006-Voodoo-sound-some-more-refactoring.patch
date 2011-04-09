@@ -1,0 +1,57 @@
+From 10700a751de37bdc87530eeaeace64b255c52718 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Sat, 12 Mar 2011 04:28:17 +0100
+Subject: [PATCH 06/33] Voodoo sound: some more refactoring
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 08a56f5..866c27b 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -68,6 +68,13 @@ static ssize_t name##_store(struct device *dev, struct device_attribute *attr, c
+ }
+ 
+ 
++#ifdef NEXUS_S
++#define DECLARE_WM8994(codec) struct wm8994_priv *wm8994 = codec->drvdata;
++#else
++#define DECLARE_WM8994(codec) struct wm8994_priv *wm8994 = codec->private_data;
++#endif
++
++
+ #ifdef CONFIG_SND_VOODOO_HP_LEVEL_CONTROL
+ void update_hpvol()
+ {
+@@ -270,11 +277,7 @@ void update_fll_tuning(bool with_mute)
+ 
+ unsigned short mono_downmix_get_value(unsigned short val)
+ {
+-#ifdef NEXUS_S
+-	struct wm8994_priv *wm8994 = codec_->drvdata;
+-#else
+-	struct wm8994_priv *wm8994 = codec_->private_data;
+-#endif
++	DECLARE_WM8994(codec_)
+ 	// depends on the output path in order to preserve mono downmixing
+ 	// on speaker
+ #ifdef GALAXY_TAB
+@@ -544,11 +547,8 @@ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int
+ {
+ 	// modify some registers before those being written to the codec
+ 
+-#ifdef NEXUS_S
+-	struct wm8994_priv *wm8994 = codec->drvdata;
+-#else
+-	struct wm8994_priv *wm8994 = codec->private_data;
+-#endif
++	DECLARE_WM8994(codec)
++
+ 	// be sure our pointer to codec is up to date
+ 	codec_ = codec;
+ 
+-- 
+1.7.4.3
+

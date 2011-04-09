@@ -1,0 +1,41 @@
+From a0f452042079980b3feaec1c359b91495aac4d55 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Tue, 15 Mar 2011 05:39:36 +0100
+Subject: [PATCH 18/33] Voodoo sound: ifdefs around wm8994_voodoo.h include
+
+---
+ Kernel/sound/soc/codecs/wm8994.c       |    2 ++
+ Kernel/sound/soc/codecs/wm8994_aries.c |    2 ++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994.c b/Kernel/sound/soc/codecs/wm8994.c
+index 3965e39..544299a 100644
+--- a/Kernel/sound/soc/codecs/wm8994.c
++++ b/Kernel/sound/soc/codecs/wm8994.c
+@@ -36,7 +36,9 @@
+ #include <plat/map-base.h>
+ #include <mach/regs-clock.h> 
+ #include "wm8994.h"
++#ifdef CONFIG_SND_VOODOO
+ #include "wm8994_voodoo.h"
++#endif
+ 
+ #define WM8994_VERSION "0.1"
+ #define SUBJECT "wm8994.c"
+diff --git a/Kernel/sound/soc/codecs/wm8994_aries.c b/Kernel/sound/soc/codecs/wm8994_aries.c
+index 28d1aa1..417a796 100644
+--- a/Kernel/sound/soc/codecs/wm8994_aries.c
++++ b/Kernel/sound/soc/codecs/wm8994_aries.c
+@@ -20,7 +20,9 @@
+ #include <mach/regs-clock.h> 
+ #include <mach/gpio.h> 
+ #include "wm8994.h"
++#ifdef CONFIG_SND_VOODOO
+ #include "wm8994_voodoo.h"
++#endif
+ 
+ //------------------------------------------------
+ //		Debug Feature
+-- 
+1.7.4.3
+

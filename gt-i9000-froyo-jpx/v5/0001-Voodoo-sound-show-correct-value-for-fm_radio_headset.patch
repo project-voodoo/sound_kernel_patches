@@ -1,0 +1,25 @@
+From e2d6d43a5995a8bf1ed295afb63f51ce138de06f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Fri, 11 Mar 2011 19:51:10 +0100
+Subject: [PATCH 01/33] Voodoo sound: show correct value for fm_radio_headset_normalize_gain sysfs control
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index e9bce9a..b10939c 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -337,7 +337,7 @@ static ssize_t fm_radio_headset_restore_highs_store(struct device *dev, struct d
+ 
+ static ssize_t fm_radio_headset_normalize_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+-	return sprintf(buf,"%u\n",(fm_radio_headset_restore_highs ? 1 : 0));
++	return sprintf(buf,"%u\n",(fm_radio_headset_normalize_gain ? 1 : 0));
+ }
+ 
+ static ssize_t fm_radio_headset_normalize_gain_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+-- 
+1.7.4.3
+

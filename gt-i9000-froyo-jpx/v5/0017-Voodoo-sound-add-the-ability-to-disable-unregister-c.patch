@@ -1,0 +1,198 @@
+From d16d676b211db0441036dbce9aaf1c812a96f91c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Tue, 15 Mar 2011 00:35:16 +0100
+Subject: [PATCH 17/33] Voodoo sound: add the ability to disable/unregister completly the driver and its modifications, and also to re-enable it later
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   87 +++++++++++++++++++++++++++++--
+ Kernel/sound/soc/codecs/wm8994_voodoo.h |    2 +
+ 2 files changed, 85 insertions(+), 4 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 9b4eeee..869d84b 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -45,6 +45,9 @@ unsigned short original_record_gain;
+ bool speaker_tuning = false;
+ #endif
+ 
++// global active or kill switch
++bool enable = false;
++
+ bool dac_osr128 = true;
+ bool adc_osr128 = false;
+ bool fll_tuning = true;
+@@ -633,6 +636,25 @@ static ssize_t voodoo_sound_version(struct device *dev, struct device_attribute
+ 	return sprintf(buf, "%u\n", VOODOO_SOUND_VERSION);
+ }
+ 
++
++DECLARE_BOOL_SHOW(enable)
++static ssize_t enable_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
++{
++	unsigned short state;
++	bool bool_state;
++	if (sscanf(buf, "%hu", &state) == 1)
++	{
++		bool_state = state == 0 ? false : true;
++		if (state != enable)
++		{
++			enable = bool_state;
++			update_enable();
++		}
++	}
++	return size;
++}
++
++
+ #ifdef CONFIG_SND_VOODOO_HP_LEVEL_CONTROL
+ static DEVICE_ATTR(headphone_amplifier_level, S_IRUGO | S_IWUGO , headphone_amplifier_level_show, headphone_amplifier_level_store);
+ #endif
+@@ -658,6 +680,8 @@ static DEVICE_ATTR(wm8994_write, S_IWUSR , NULL, store_wm8994_write);
+ #endif
+ static DEVICE_ATTR(version, S_IRUGO , voodoo_sound_version, NULL);
+ 
++static DEVICE_ATTR(enable, S_IRUGO | S_IWUGO , enable_show, enable_store);
++
+ static struct attribute *voodoo_sound_attributes[] = {
+ #ifdef CONFIG_SND_VOODOO_HP_LEVEL_CONTROL
+ 		&dev_attr_headphone_amplifier_level.attr,
+@@ -686,15 +710,53 @@ static struct attribute *voodoo_sound_attributes[] = {
+ 		NULL
+ };
+ 
++static struct attribute *voodoo_sound_control_attributes[] = {
++		&dev_attr_enable.attr,
++		NULL
++};
++
+ static struct attribute_group voodoo_sound_group = {
+ 		.attrs  = voodoo_sound_attributes,
+ };
+ 
++static struct attribute_group voodoo_sound_control_group = {
++		.attrs  = voodoo_sound_control_attributes,
++};
++
+ static struct miscdevice voodoo_sound_device = {
+ 		.minor = MISC_DYNAMIC_MINOR,
+ 		.name = "voodoo_sound",
+ };
+ 
++static struct miscdevice voodoo_sound_control_device = {
++		.minor = MISC_DYNAMIC_MINOR,
++		.name = "voodoo_sound_control",
++};
++
++
++void voodoo_hook_wm8994_pcm_remove() {
++	printk("Voodoo sound: removing driver v%d\n", VOODOO_SOUND_VERSION);
++	sysfs_remove_group(&voodoo_sound_device.this_device->kobj, &voodoo_sound_group);
++	misc_deregister(&voodoo_sound_device);
++}
++
++
++void update_enable()
++{
++	if (enable)
++	{
++		printk("Voodoo sound: initializing driver v%d\n", VOODOO_SOUND_VERSION);
++		misc_register(&voodoo_sound_device);
++		if (sysfs_create_group(&voodoo_sound_device.this_device->kobj, &voodoo_sound_group) < 0)
++		{
++			printk("%s sysfs_create_group fail\n", __FUNCTION__);
++			pr_err("Failed to create sysfs group for device (%s)!\n", voodoo_sound_device.name);
++		}
++	}
++	else
++		voodoo_hook_wm8994_pcm_remove();
++}
++
+ 
+ /*
+  *
+@@ -705,6 +767,10 @@ static struct miscdevice voodoo_sound_device = {
+ #ifdef CONFIG_SND_VOODOO_FM
+ void voodoo_hook_fmradio_headset()
+ {
++	// global kill switch
++	if (! enable)
++		return;
++
+ 	if (! fm_radio_headset_restore_bass && ! fm_radio_headset_restore_highs && !fm_radio_headset_normalize_gain)
+ 		return;
+ 
+@@ -717,6 +783,10 @@ void voodoo_hook_fmradio_headset()
+ #ifdef CONFIG_SND_VOODOO_RECORD_PRESETS
+ void voodoo_hook_record_main_mic()
+ {
++	// global kill switch
++	if (! enable)
++		return;
++
+ 	if (recording_preset == 0)
+ 		return;
+ 
+@@ -728,6 +798,9 @@ void voodoo_hook_record_main_mic()
+ 
+ void voodoo_hook_playback_speaker()
+ {
++	// global kill switch
++	if (! enable)
++		return;
+ #ifdef NEXUS_S
+ 	if (! speaker_tuning)
+ 		return;
+@@ -739,6 +812,10 @@ void voodoo_hook_playback_speaker()
+ 
+ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int reg, unsigned int value)
+ {
++	// global kill switch
++	if (! enable)
++		return value;
++
+ 	// modify some registers before those being written to the codec
+ 	// be sure our pointer to codec is up to date
+ 	codec_ = codec;
+@@ -781,12 +858,14 @@ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int
+ 
+ void voodoo_hook_wm8994_pcm_probe(struct snd_soc_codec *codec)
+ {
+-	printk("Voodoo sound: driver v%d\n", VOODOO_SOUND_VERSION);
+-	misc_register(&voodoo_sound_device);
+-	if (sysfs_create_group(&voodoo_sound_device.this_device->kobj, &voodoo_sound_group) < 0)
++	enable = true;
++	update_enable();
++
++	misc_register(&voodoo_sound_control_device);
++	if (sysfs_create_group(&voodoo_sound_control_device.this_device->kobj, &voodoo_sound_control_group) < 0)
+ 	{
+ 		printk("%s sysfs_create_group fail\n", __FUNCTION__);
+-		pr_err("Failed to create sysfs group for device (%s)!\n", voodoo_sound_device.name);
++		pr_err("Failed to create sysfs group for device (%s)!\n", voodoo_sound_control_device.name);
+ 	}
+ 
+ 	// make a copy of the codec pointer
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.h b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+index 735ae1a..cdd6051 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.h
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+@@ -10,6 +10,7 @@ bool is_path(int unified_path);
+ void voodoo_hook_fmradio_headset(void);
+ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int reg, unsigned int value);
+ void voodoo_hook_wm8994_pcm_probe(struct snd_soc_codec *codec);
++void voodoo_hook_wm8994_pcm_remove(void);
+ void voodoo_hook_record_main_mic(void);
+ void voodoo_hook_playback_speaker(void);
+ void update_hpvol(void);
+@@ -21,6 +22,7 @@ void update_osr128(bool with_mute);
+ void update_fll_tuning(bool with_mute);
+ void update_mono_downmix(bool with_mute);
+ void update_dac_direct(bool with_mute);
++void update_enable(void);
+ unsigned short tune_fll_value(unsigned short val);
+ 
+ #ifdef CONFIG_MACH_HERRING
+-- 
+1.7.4.3
+

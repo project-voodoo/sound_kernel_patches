@@ -1,0 +1,63 @@
+From dfcb218a03b40ae43d1fe295d3043bf8be4753af Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Sun, 13 Mar 2011 06:03:13 +0100
+Subject: [PATCH 10/33] Voodoo sound: activate Recording Presets also on Nexus S, and use the real original input gain on each device
+
+---
+ Kernel/sound/soc/codecs/Kconfig.voodoo  |    2 +-
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   11 +++++++++--
+ 2 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/Kconfig.voodoo b/Kernel/sound/soc/codecs/Kconfig.voodoo
+index 71274e3..32a2672 100644
+--- a/Kernel/sound/soc/codecs/Kconfig.voodoo
++++ b/Kernel/sound/soc/codecs/Kconfig.voodoo
+@@ -25,7 +25,7 @@ config SND_VOODOO_HP_LEVEL
+ 	  it would introduce hiss for people not using the control app
+ 
+ config SND_VOODOO_RECORD_PRESETS
+-	bool "Microphone recording presets" if SND_ARIES_WM8994=y || SND_UNIVERSAL_WM8994=y
++	bool "Microphone recording presets"
+ 	depends on SND_VOODOO
+ 	default y
+ 	help
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index a78e37c..9382956 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -38,6 +38,7 @@ bool fm_radio_headset_normalize_gain = true;
+ 
+ #ifdef CONFIG_SND_VOODOO_RECORD_PRESETS
+ unsigned short recording_preset = 1;
++unsigned short original_record_gain;
+ #endif
+ 
+ bool dac_osr128 = true;
+@@ -192,9 +193,13 @@ void update_recording_preset(bool with_mute)
+ 	{
+ 		case 0:
+ 		{
++#ifdef NEXUS_S
++			printk("Voodoo sound: Nexus S original microphone gain: %X\n", original_record_gain);
++#endif
+ 			// Original:
+-			// IN1L_VOL1=11000 (+19.5 dB)
+-			wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, 0x0118);
++			// On Galaxy S: IN1L_VOL1=11000 (+19.5 dB)
++			// On Nexus S: variable value
++			wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, original_record_gain);
+ 			// DRC disabled
+ 			wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x0080);
+ 			break;
+@@ -604,6 +609,8 @@ void voodoo_hook_fmradio_headset()
+ #ifdef CONFIG_SND_VOODOO_RECORD_PRESETS
+ void voodoo_hook_record_main_mic()
+ {
++
++	original_record_gain = wm8994_read(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME);
+ 	update_recording_preset(false);
+ }
+ #endif
+-- 
+1.7.4.3
+

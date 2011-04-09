@@ -1,0 +1,46 @@
+From 4d9af05cf3cc3b5a68f7685f66c676e192ae437b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Thu, 24 Mar 2011 16:37:48 +0100
+Subject: [PATCH 29/33] Voodoo sound: switch to relative include paths for module build
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 297dc33..6af415b 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -14,11 +14,20 @@
+ #include <linux/delay.h>
+ #include <linux/miscdevice.h>
+ #include "wm8994_voodoo.h"
++
++#ifndef MODULE
+ #ifdef NEXUS_S
+ #include "wm8994_samsung.h"
+ #else
+ #include "wm8994.h"
+ #endif
++#else
++#ifdef NEXUS_S
++#include "../wm8994_samsung.h"
++#else
++#include "../wm8994.h"
++#endif
++#endif
+ 
+ #define SUBJECT "wm8994_voodoo.c"
+ #define VOODOO_SOUND_VERSION 6
+@@ -350,7 +359,7 @@ bool is_path(int unified_path)
+ #ifdef GALAXY_TAB
+ 			return (wm8994->codec_state & FMRADIO_ACTIVE) && (wm8994->fmradio_path == FMR_HP);
+ #else
+-			return (wm8994->codec_state & FMRADIO_ACTIVE) && (wm8994->fmradio_path == FMR_HP);;
++			return (wm8994->codec_state & FMRADIO_ACTIVE) && (wm8994->fmradio_path == FMR_HP);
+ #endif
+ #endif
+ #endif
+-- 
+1.7.4.3
+

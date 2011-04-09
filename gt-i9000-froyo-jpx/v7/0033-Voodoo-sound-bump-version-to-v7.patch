@@ -1,0 +1,25 @@
+From 98c7a60fba94fc5ca5f7fdb0b0c479981e8d6042 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Mon, 28 Mar 2011 06:07:29 +0200
+Subject: [PATCH 33/33] Voodoo sound: bump version to v7
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index af5f1c2..82709d4 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -30,7 +30,7 @@
+ #endif
+ 
+ #define SUBJECT "wm8994_voodoo.c"
+-#define VOODOO_SOUND_VERSION 6
++#define VOODOO_SOUND_VERSION 7
+ 
+ #ifdef MODULE
+ #include "tegrak_voodoo_sound.h"
+-- 
+1.7.4.3
+

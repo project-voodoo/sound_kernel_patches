@@ -1,0 +1,25 @@
+From 03cf3f4d07ea3f358d1c12a375d5f54705450b9b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Fri, 11 Mar 2011 19:52:10 +0100
+Subject: [PATCH 02/33] Voodoo sound: enable FLL tuning "Anti-jitter" option by default: recommanded
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index b10939c..4d97909 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -45,7 +45,7 @@ unsigned short recording_preset = 1;
+ 
+ bool dac_osr128 = true;
+ bool adc_osr128 = false;
+-bool fll_tuning = false;
++bool fll_tuning = true;
+ bool mono_downmix = false;
+ 
+ // keep here a pointer to the codec structure
+-- 
+1.7.4.3
+

@@ -1,0 +1,275 @@
+From 824dce4efe0680484fb8466264457c86ca43bb2a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Sat, 12 Mar 2011 04:03:37 +0100
+Subject: [PATCH 05/33] Voodoo sound: code skrinking by reformating using precompiler definitions for repetitive sysfs controls declarations
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |  154 ++++++++----------------------
+ Kernel/sound/soc/codecs/wm8994_voodoo.h |   10 +-
+ 2 files changed, 46 insertions(+), 118 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 7e5c190..08a56f5 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -49,6 +49,25 @@ bool mono_downmix = false;
+ struct snd_soc_codec *codec_;
+ 
+ 
++#define DECLARE_BOOL_SHOW(name) \
++static ssize_t name##_show(struct device *dev, struct device_attribute *attr, char *buf) \
++{ \
++	return sprintf(buf,"%u\n",(name ? 1 : 0)); \
++}
++
++#define DECLARE_BOOL_STORE_UPDATE_WITH_MUTE(name, updater, with_mute) \
++static ssize_t name##_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size) \
++{ \
++	unsigned short state; \
++	if (sscanf(buf, "%hu", &state) == 1) \
++	{ \
++		name = state == 0 ? false : true; \
++		updater(with_mute); \
++	} \
++	return size; \
++}
++
++
+ #ifdef CONFIG_SND_VOODOO_HP_LEVEL_CONTROL
+ void update_hpvol()
+ {
+@@ -120,7 +139,7 @@ void update_fm_radio_headset_restore_freqs(bool with_mute)
+ 	}
+ }
+ 
+-void update_fm_radio_headset_normalize_gain()
++void update_fm_radio_headset_normalize_gain(bool with_mute)
+ {
+ 	if (fm_radio_headset_normalize_gain)
+ 	{
+@@ -149,7 +168,7 @@ void update_fm_radio_headset_normalize_gain()
+ 
+ 
+ #ifdef CONFIG_SND_VOODOO_RECORD_PRESETS
+-void update_recording_preset()
++void update_recording_preset(bool with_mute)
+ {
+ 	switch (recording_preset)
+ 	{
+@@ -222,7 +241,7 @@ unsigned short osr128_get_value(unsigned short val)
+ 	return val;
+ }
+ 
+-void update_osr128()
++void update_osr128(bool with_mute)
+ {
+ 	unsigned short val;
+ 	val = osr128_get_value(wm8994_read(codec_, WM8994_OVERSAMPLING));
+@@ -239,7 +258,7 @@ unsigned short fll_tuning_get_value(unsigned short val)
+ 	return val;
+ }
+ 
+-void update_fll_tuning()
++void update_fll_tuning(bool with_mute)
+ {
+ 	unsigned short val;
+ 	val = fll_tuning_get_value(wm8994_read(codec_, WM8994_FLL1_CONTROL_4));
+@@ -274,7 +293,7 @@ unsigned short mono_downmix_get_value(unsigned short val)
+ }
+ 
+ 
+-void update_mono_downmix()
++void update_mono_downmix(bool with_mute)
+ {
+ 	unsigned short val1, val2, val3;
+ 	val1 = mono_downmix_get_value(wm8994_read(codec_, WM8994_AIF1_DAC1_FILTERS_1));
+@@ -315,53 +334,14 @@ static ssize_t headphone_amplifier_level_store(struct device *dev, struct device
+ 
+ 
+ #ifdef CONFIG_SND_VOODOO_FM
+-static ssize_t fm_radio_headset_restore_bass_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	return sprintf(buf,"%u\n",(fm_radio_headset_restore_bass ? 1 : 0));
+-}
+-
+-static ssize_t fm_radio_headset_restore_bass_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+-{
+-	unsigned short state;
+-	if (sscanf(buf, "%hu", &state) == 1)
+-	{
+-		fm_radio_headset_restore_bass = state == 0 ? false : true;
+-		update_fm_radio_headset_restore_freqs(true);
+-	}
+-	return size;
+-}
++DECLARE_BOOL_SHOW(fm_radio_headset_restore_bass)
++DECLARE_BOOL_STORE_UPDATE_WITH_MUTE(fm_radio_headset_restore_bass, update_fm_radio_headset_restore_freqs, true)
+ 
+-static ssize_t fm_radio_headset_restore_highs_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	return sprintf(buf,"%u\n",(fm_radio_headset_restore_highs ? 1 : 0));
+-}
++DECLARE_BOOL_SHOW(fm_radio_headset_restore_highs)
++DECLARE_BOOL_STORE_UPDATE_WITH_MUTE(fm_radio_headset_restore_highs, update_fm_radio_headset_restore_freqs, true)
+ 
+-static ssize_t fm_radio_headset_restore_highs_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+-{
+-	unsigned short state;
+-	if (sscanf(buf, "%hu", &state) == 1)
+-	{
+-		fm_radio_headset_restore_highs = state == 0 ? false : true;
+-		update_fm_radio_headset_restore_freqs(true);
+-	}
+-	return size;
+-}
+-
+-static ssize_t fm_radio_headset_normalize_gain_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	return sprintf(buf,"%u\n",(fm_radio_headset_normalize_gain ? 1 : 0));
+-}
+-
+-static ssize_t fm_radio_headset_normalize_gain_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+-{
+-	unsigned short state;
+-	if (sscanf(buf, "%hu", &state) == 1)
+-	{
+-		fm_radio_headset_normalize_gain = state == 0 ? false : true;
+-		update_fm_radio_headset_normalize_gain();
+-	}
+-	return size;
+-}
++DECLARE_BOOL_SHOW(fm_radio_headset_normalize_gain)
++DECLARE_BOOL_STORE_UPDATE_WITH_MUTE(fm_radio_headset_normalize_gain, update_fm_radio_headset_normalize_gain, false)
+ #endif
+ 
+ 
+@@ -377,76 +357,24 @@ static ssize_t recording_preset_store(struct device *dev, struct device_attribut
+ 	if (sscanf(buf, "%hu", &preset_number) == 1)
+ 	{
+ 		recording_preset = preset_number;
+-		update_recording_preset();
++		update_recording_preset(false);
+ 	}
+ 	return size;
+ }
+ #endif
+ 
+ 
+-static ssize_t dac_osr128_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	return sprintf(buf,"%u\n",(dac_osr128 ? 1 : 0));
+-}
++DECLARE_BOOL_SHOW(dac_osr128)
++DECLARE_BOOL_STORE_UPDATE_WITH_MUTE(dac_osr128, update_osr128, false)
+ 
+-static ssize_t dac_osr128_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+-{
+-	unsigned short state;
+-	if (sscanf(buf, "%hu", &state) == 1)
+-	{
+-		dac_osr128 = state == 0 ? false : true;
+-		update_osr128();
+-	}
+-	return size;
+-}
+-
+-static ssize_t adc_osr128_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	return sprintf(buf,"%u\n",(adc_osr128 ? 1 : 0));
+-}
+-
+-static ssize_t adc_osr128_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+-{
+-	unsigned short state;
+-	if (sscanf(buf, "%hu", &state) == 1)
+-	{
+-		adc_osr128 = state == 0 ? false : true;
+-		update_osr128();
+-	}
+-	return size;
+-}
+-
+-static ssize_t fll_tuning_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	return sprintf(buf,"%u\n",(fll_tuning ? 1 : 0));
+-}
++DECLARE_BOOL_SHOW(adc_osr128)
++DECLARE_BOOL_STORE_UPDATE_WITH_MUTE(adc_osr128, update_osr128, false)
+ 
+-static ssize_t fll_tuning_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+-{
+-	unsigned short state;
+-	if (sscanf(buf, "%hu", &state) == 1)
+-	{
+-		fll_tuning = state == 0 ? false : true;
+-		update_fll_tuning();
+-	}
+-	return size;
+-}
++DECLARE_BOOL_SHOW(fll_tuning)
++DECLARE_BOOL_STORE_UPDATE_WITH_MUTE(fll_tuning, update_fll_tuning, false)
+ 
+-static ssize_t mono_downmix_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	return sprintf(buf,"%u\n",(mono_downmix ? 1 : 0));
+-}
+-
+-static ssize_t mono_downmix_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+-{
+-	unsigned short state;
+-	if (sscanf(buf, "%hu", &state) == 1)
+-	{
+-		mono_downmix = state == 0 ? false : true;
+-		update_mono_downmix();
+-	}
+-	return size;
+-}
++DECLARE_BOOL_SHOW(mono_downmix)
++DECLARE_BOOL_STORE_UPDATE_WITH_MUTE(mono_downmix, update_mono_downmix, false)
+ 
+ 
+ #ifdef CONFIG_SND_VOODOO_DEBUG
+@@ -595,7 +523,7 @@ void voodoo_hook_fmradio_headset()
+ 		return;
+ 
+ 	update_fm_radio_headset_restore_freqs(false);
+-	update_fm_radio_headset_normalize_gain();
++	update_fm_radio_headset_normalize_gain(false);
+ }
+ #endif
+ 
+@@ -603,7 +531,7 @@ void voodoo_hook_fmradio_headset()
+ #ifdef CONFIG_SND_VOODOO_RECORD_PRESETS
+ void voodoo_hook_record_main_mic()
+ {
+-	update_recording_preset();
++	update_recording_preset(false);
+ }
+ #endif
+ 
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.h b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+index b52e19c..4d8a072 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.h
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+@@ -13,13 +13,13 @@ void voodoo_hook_record_main_mic(void);
+ void voodoo_hook_playback_headset(void);
+ void update_hpvol(void);
+ void update_fm_radio_headset_restore_freqs(bool with_mute);
+-void update_fm_radio_headset_normalize_gain(void);
+-void update_recording_preset(void);
++void update_fm_radio_headset_normalize_gain(bool with_mute);
++void update_recording_preset(bool with_mute);
+ void update_full_bitwidth(bool with_mute);
+-void update_osr128(void);
+-void update_fll_tuning(void);
++void update_osr128(bool with_mute);
++void update_fll_tuning(bool with_mute);
++void update_mono_downmix(bool with_mute);
+ unsigned short tune_fll_value(unsigned short val);
+-void update_mono_downmix(void);
+ 
+ #ifdef CONFIG_MACH_HERRING
+ #define NEXUS_S
+-- 
+1.7.4.3
+

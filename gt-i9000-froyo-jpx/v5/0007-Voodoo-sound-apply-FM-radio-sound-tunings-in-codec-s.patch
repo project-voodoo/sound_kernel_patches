@@ -1,0 +1,40 @@
+From 284b1a0b20b560359cf45cf65470f4cfd4f2cf3b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Sat, 12 Mar 2011 04:37:08 +0100
+Subject: [PATCH 07/33] Voodoo sound: apply FM radio sound tunings in codec's registers only when FM radio is actually playing
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 866c27b..88f513d 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -106,6 +106,11 @@ void update_fm_radio_headset_restore_freqs(bool with_mute)
+ {
+ 	unsigned short val;
+ 
++	// apply only when FM radio is active
++	DECLARE_WM8994(codec_)
++	if (wm8994->fmradio_path == FMR_OFF)
++		return;
++
+ 	if (with_mute)
+ 	{
+ 		wm8994_write(codec_, WM8994_AIF2_DAC_FILTERS_1, 0x236);
+@@ -148,6 +153,11 @@ void update_fm_radio_headset_restore_freqs(bool with_mute)
+ 
+ void update_fm_radio_headset_normalize_gain(bool with_mute)
+ {
++	// apply only when FM radio is active
++	DECLARE_WM8994(codec_)
++	if (wm8994->fmradio_path == FMR_OFF)
++		return;
++
+ 	if (fm_radio_headset_normalize_gain)
+ 	{
+ 		// Bumped volume, change with Zero Cross
+-- 
+1.7.4.3
+

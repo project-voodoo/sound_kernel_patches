@@ -1,0 +1,36 @@
+From 1980f0763f58921b764842ab4c349027d8a59d09 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Mon, 14 Mar 2011 08:07:32 +0100
+Subject: [PATCH 15/33] Voodoo sound: skip settings apply in registers if not useful
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 90a63a9..f2617bd 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -717,6 +717,9 @@ void voodoo_hook_fmradio_headset()
+ #ifdef CONFIG_SND_VOODOO_RECORD_PRESETS
+ void voodoo_hook_record_main_mic()
+ {
++	if (recording_preset == 0)
++		return;
++
+ 	original_record_gain = wm8994_read(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME);
+ 	update_recording_preset(false);
+ }
+@@ -729,6 +732,9 @@ void voodoo_hook_playback_headset()
+ void voodoo_hook_playback_speaker()
+ {
+ #ifdef NEXUS_S
++	if (! speaker_tuning)
++		return;
++
+ 	update_speaker_tuning(false);
+ #endif
+ }
+-- 
+1.7.4.3
+

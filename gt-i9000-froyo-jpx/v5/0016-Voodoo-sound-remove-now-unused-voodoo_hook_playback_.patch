@@ -1,0 +1,55 @@
+From 0feb44104c6ea49331e27c7adbea3cb655a03a82 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Mon, 14 Mar 2011 08:10:21 +0100
+Subject: [PATCH 16/33] Voodoo sound: remove now unused voodoo_hook_playback_headset
+
+---
+ Kernel/sound/soc/codecs/wm8994_aries.c  |    4 ----
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |    3 ---
+ Kernel/sound/soc/codecs/wm8994_voodoo.h |    1 -
+ 3 files changed, 0 insertions(+), 8 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_aries.c b/Kernel/sound/soc/codecs/wm8994_aries.c
+index c80b8ad..28d1aa1 100644
+--- a/Kernel/sound/soc/codecs/wm8994_aries.c
++++ b/Kernel/sound/soc/codecs/wm8994_aries.c
+@@ -1573,10 +1573,6 @@ void wm8994_set_playback_headset(struct snd_soc_codec *codec)
+ 	val &= ~(WM8994_DAC1R_MUTE_MASK | WM8994_DAC1R_VOL_MASK);
+ 	val |= TUNING_DAC1R_VOL; //0 db volume	
+ 	wm8994_write(codec,WM8994_DAC1_RIGHT_VOLUME,val);	
+-
+-#ifdef CONFIG_SND_VOODOO
+-	voodoo_hook_playback_headset();
+-#endif
+ 	
+ 	// Unmute the AF1DAC1	
+ 	val = wm8994_read(codec, WM8994_AIF1_DAC1_FILTERS_1 ); 	
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index f2617bd..9b4eeee 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -725,9 +725,6 @@ void voodoo_hook_record_main_mic()
+ }
+ #endif
+ 
+-void voodoo_hook_playback_headset()
+-{
+-}
+ 
+ void voodoo_hook_playback_speaker()
+ {
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.h b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+index ce087bb..735ae1a 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.h
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+@@ -11,7 +11,6 @@ void voodoo_hook_fmradio_headset(void);
+ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int reg, unsigned int value);
+ void voodoo_hook_wm8994_pcm_probe(struct snd_soc_codec *codec);
+ void voodoo_hook_record_main_mic(void);
+-void voodoo_hook_playback_headset(void);
+ void voodoo_hook_playback_speaker(void);
+ void update_hpvol(void);
+ void update_fm_radio_headset_restore_freqs(bool with_mute);
+-- 
+1.7.4.3
+

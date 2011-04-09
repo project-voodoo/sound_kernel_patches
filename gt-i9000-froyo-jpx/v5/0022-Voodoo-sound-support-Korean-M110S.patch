@@ -1,0 +1,67 @@
+From 79c2642b04c2eff8ed8ae96f0ffc51f7b7852b83 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Wed, 16 Mar 2011 07:45:01 +0100
+Subject: [PATCH 22/33] Voodoo sound: support Korean M110S
+
+---
+ Kernel/sound/soc/codecs/Kconfig.voodoo  |    4 ++--
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |    4 ++++
+ Kernel/sound/soc/codecs/wm8994_voodoo.h |    4 ++++
+ 3 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/Kconfig.voodoo b/Kernel/sound/soc/codecs/Kconfig.voodoo
+index 0edc151..af418fb 100644
+--- a/Kernel/sound/soc/codecs/Kconfig.voodoo
++++ b/Kernel/sound/soc/codecs/Kconfig.voodoo
+@@ -17,7 +17,7 @@ config SND_VOODOO_HP_LEVEL_CONTROL
+ config SND_VOODOO_HP_LEVEL
+ 	int "default level at boot 0-62"
+ 	depends on SND_VOODOO_HP_LEVEL_CONTROL
+-	default 54 if MACH_HERRING=y
++	default 54 if MACH_HERRING=y || M110S=y
+ 	default 47
+ 	range 0 62
+ 	help
+@@ -39,7 +39,7 @@ config SND_VOODOO_RECORD_PRESETS
+ config SND_VOODOO_FM
+ 	bool "FM radio: restore a normal frequency response"
+ 	depends on SND_VOODOO && SND_ARIES_SOC_WM8994
+-	default n if S5PC110_T959_BOARD=y || S5PC110_KEPLER_BOARD=y || S5PV210_VICTORY=y
++	default n if S5PC110_T959_BOARD=y || S5PC110_KEPLER_BOARD=y || S5PV210_VICTORY=y || M110S=y
+ 	default y
+ 	help
+ 	  Adds a control to enable or disable the high-pass filter on FM radio
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index a598f3c..9cf877a 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -309,9 +309,13 @@ bool is_path(int unified_path)
+ #ifdef GALAXY_TAB
+ 			if (wm8994->cur_path == HP3P || wm8994->cur_path == HP4P || wm8994->fmradio_path == FMR_HP)
+ #else
++#ifdef M110S
++			if (wm8994->cur_path == HP)
++#else
+ 			if (wm8994->cur_path == HP || wm8994->fmradio_path == FMR_HP)
+ #endif
+ #endif
++#endif
+ 				return true;
+ 
+ 
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.h b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+index cdd6051..e7a31b0 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.h
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+@@ -33,4 +33,8 @@ unsigned short tune_fll_value(unsigned short val);
+ #define GALAXY_TAB
+ #endif
+ 
++#ifdef CONFIG_M110S
++#define M110S
++#endif
++
+ enum unified_path { HEADPHONES, SPEAKER, MAIN_MICROPHONE };
+-- 
+1.7.4.3
+

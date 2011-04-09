@@ -1,0 +1,162 @@
+From f809a3fbfb8c7e84227f8a8386e4f0d88f7552ae Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Sat, 26 Mar 2011 04:43:15 +0100
+Subject: [PATCH 31/33] Voodoo sound: some wm8994_register_dump refactoring
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |  101 +++++++++++++-----------------
+ 1 files changed, 44 insertions(+), 57 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index db67cb8..4b11157 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -630,93 +630,79 @@ static ssize_t show_wm8994_register_dump(struct device *dev,
+ 					 struct device_attribute *attr,
+ 					 char *buf)
+ {
+-	// modified version of wm8994_register_dump from wm8994_aries.c
+-	int wm8994_reg;
++	// modified version of register_dump from wm8994_aries.c
++	// r = wm8994 register
++	int r;
+ 
+-	for (wm8994_reg = 0; wm8994_reg <= 0x6; wm8994_reg++)
+-		sprintf(buf, "0x%X 0x%X\n",
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0; r <= 0x6; r++)
++		sprintf(buf, "0x%X 0x%X\n", r, wm8994_read(codec, r));
+ 
+ 	sprintf(buf, "%s0x%X 0x%X\n", buf, 0x15, wm8994_read(codec, 0x15));
+ 
+-	for (wm8994_reg = 0x18; wm8994_reg <= 0x3C; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x18; r <= 0x3C; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
++
+ 	sprintf(buf, "%s0x%X 0x%X\n", buf, 0x4C, wm8994_read(codec, 0x4C));
+ 
+-	for (wm8994_reg = 0x51; wm8994_reg <= 0x5C; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x51; r <= 0x5C; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+ 	sprintf(buf, "%s0x%X 0x%X\n", buf, 0x60, wm8994_read(codec, 0x60));
+ 	sprintf(buf, "%s0x%X 0x%X\n", buf, 0x101, wm8994_read(codec, 0x101));
+ 	sprintf(buf, "%s0x%X 0x%X\n", buf, 0x110, wm8994_read(codec, 0x110));
+ 	sprintf(buf, "%s0x%X 0x%X\n", buf, 0x111, wm8994_read(codec, 0x111));
+ 
+-	for (wm8994_reg = 0x200; wm8994_reg <= 0x212; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
+-	for (wm8994_reg = 0x220; wm8994_reg <= 0x224; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x200; r <= 0x212; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
++
++	for (r = 0x220; r <= 0x224; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+-	for (wm8994_reg = 0x240; wm8994_reg <= 0x244; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x240; r <= 0x244; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+-	for (wm8994_reg = 0x300; wm8994_reg <= 0x317; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x300; r <= 0x317; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+-	for (wm8994_reg = 0x400; wm8994_reg <= 0x411; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x400; r <= 0x411; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+-	for (wm8994_reg = 0x420; wm8994_reg <= 0x423; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x420; r <= 0x423; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+-	for (wm8994_reg = 0x440; wm8994_reg <= 0x444; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x440; r <= 0x444; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+-	for (wm8994_reg = 0x450; wm8994_reg <= 0x454; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x450; r <= 0x454; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+-	for (wm8994_reg = 0x480; wm8994_reg <= 0x493; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x480; r <= 0x493; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+-	for (wm8994_reg = 0x4A0; wm8994_reg <= 0x4B3; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x4A0; r <= 0x4B3; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+-	for (wm8994_reg = 0x500; wm8994_reg <= 0x503; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x500; r <= 0x503; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+ 	sprintf(buf, "%s0x%X 0x%X\n", buf, 0x510, wm8994_read(codec, 0x510));
+ 	sprintf(buf, "%s0x%X 0x%X\n", buf, 0x520, wm8994_read(codec, 0x520));
+ 	sprintf(buf, "%s0x%X 0x%X\n", buf, 0x521, wm8994_read(codec, 0x521));
+ 
+-	for (wm8994_reg = 0x540; wm8994_reg <= 0x544; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x540; r <= 0x544; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+-	for (wm8994_reg = 0x580; wm8994_reg <= 0x593; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x580; r <= 0x593; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
++
++	for (r = 0x600; r <= 0x614; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+-	for (wm8994_reg = 0x600; wm8994_reg <= 0x614; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
+ 	sprintf(buf, "%s0x%X 0x%X\n", buf, 0x620, wm8994_read(codec, 0x620));
+ 	sprintf(buf, "%s0x%X 0x%X\n", buf, 0x621, wm8994_read(codec, 0x621));
+ 
+-	for (wm8994_reg = 0x700; wm8994_reg <= 0x70A; wm8994_reg++)
+-		sprintf(buf, "%s0x%X 0x%X\n", buf,
+-			wm8994_reg, wm8994_read(codec, wm8994_reg));
++	for (r = 0x700; r <= 0x70A; r++)
++		sprintf(buf, "%s0x%X 0x%X\n", buf, r, wm8994_read(codec, r));
+ 
+ 	return sprintf(buf, "%s", buf);
+ }
+@@ -816,7 +802,8 @@ static DEVICE_ATTR(mono_downmix, S_IRUGO | S_IWUGO,
+ 
+ #ifdef CONFIG_SND_VOODOO_DEBUG
+ static DEVICE_ATTR(wm8994_register_dump, S_IRUGO,
+-		   show_wm8994_register_dump, NULL);
++		   show_wm8994_register_dump,
++		   NULL);
+ 
+ static DEVICE_ATTR(wm8994_write, S_IWUSR,
+ 		   NULL,
+-- 
+1.7.4.3
+

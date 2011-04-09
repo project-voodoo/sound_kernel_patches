@@ -1,0 +1,182 @@
+From f2ef5d1d12fe96788e8a5c11e0013b5801158cd5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Sat, 12 Mar 2011 02:21:44 +0100
+Subject: [PATCH 04/33] Voodoo sound: merge with Nexus S, Galaxy Tab and Galaxy S Eclair versions
+
+---
+ Kernel/sound/soc/codecs/Kconfig.voodoo  |    9 ++++---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |   41 ++++++++++++++++++++++++-------
+ Kernel/sound/soc/codecs/wm8994_voodoo.h |    8 ++++++
+ 3 files changed, 45 insertions(+), 13 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/Kconfig.voodoo b/Kernel/sound/soc/codecs/Kconfig.voodoo
+index 0cfb307..71274e3 100644
+--- a/Kernel/sound/soc/codecs/Kconfig.voodoo
++++ b/Kernel/sound/soc/codecs/Kconfig.voodoo
+@@ -1,6 +1,6 @@
+ menuconfig SND_VOODOO
+ 	bool "Voodoo sound driver"
+-	depends on SND_S3C24XX_SOC
++	depends on SND_UNIVERSAL_WM8994 || SND_S3C24XX_SOC
+ 	default y
+ 	help
+ 	  With this option enabled, the kernel compile an additionnal driver
+@@ -8,7 +8,7 @@ menuconfig SND_VOODOO
+ 
+ config SND_VOODOO_HP_LEVEL_CONTROL
+ 	bool "Add headphone amplifier level control"
+-	depends on SND_VOODOO && SND_ARIES_SOC_WM8994
++	depends on SND_VOODOO
+ 	default y
+ 	help
+ 	  Adds a control allowing to adjust the analog gain of the headphone
+@@ -17,6 +17,7 @@ config SND_VOODOO_HP_LEVEL_CONTROL
+ config SND_VOODOO_HP_LEVEL
+ 	int "default level at boot 0-62"
+ 	depends on SND_VOODOO_HP_LEVEL_CONTROL
++	default 54 if MACH_HERRING=y
+ 	default 47
+ 	range 0 62
+ 	help
+@@ -24,7 +25,7 @@ config SND_VOODOO_HP_LEVEL
+ 	  it would introduce hiss for people not using the control app
+ 
+ config SND_VOODOO_RECORD_PRESETS
+-	bool "Microphone recording presets"
++	bool "Microphone recording presets" if SND_ARIES_WM8994=y || SND_UNIVERSAL_WM8994=y
+ 	depends on SND_VOODOO
+ 	default y
+ 	help
+@@ -44,7 +45,7 @@ config SND_VOODOO_FM
+ 
+ config SND_VOODOO_DEBUG
+ 	bool "Codec development tools (unsafe and introduce sound skipping)"
+-	depends on SND_VOODOO && SND_ARIES_SOC_WM8994
++	depends on SND_VOODOO
+ 	default n
+ 	help
+ 	  Allow to codec dump registers and load register-address/value batchs
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index b9aef55..7e5c190 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -1,7 +1,7 @@
+ /*
+  * voodoo_sound.c  --  WM8994 ALSA Soc Audio driver related
+  *
+- *  Copyright (C) 2010 François SIMOND / twitter & XDA-developers @supercurio
++ *  Copyright (C) 2010/11 François SIMOND / twitter & XDA-developers @supercurio
+  *
+  *  This program is free software; you can redistribute  it and/or modify it
+  *  under  the terms of  the GNU General  Public License as published by the
+@@ -11,17 +11,14 @@
+  */
+ 
+ #include <sound/soc.h>
+-#include <sound/soc-dapm.h>
+ #include <linux/delay.h>
+-#include <asm/io.h>
+-#include <asm/gpio.h>
+-#include <plat/gpio-cfg.h>
+-#include <plat/map-base.h>
+-#include <mach/regs-clock.h>
+-#include <mach/gpio.h>
+ #include <linux/miscdevice.h>
+-#include "wm8994.h"
+ #include "wm8994_voodoo.h"
++#ifdef NEXUS_S
++#include "wm8994_samsung.h"
++#else
++#include "wm8994.h"
++#endif
+ 
+ #define SUBJECT "wm8994_voodoo.c"
+ #define VOODOO_SOUND_VERSION 4
+@@ -254,11 +251,19 @@ void update_fll_tuning()
+ 
+ unsigned short mono_downmix_get_value(unsigned short val)
+ {
++#ifdef NEXUS_S
++	struct wm8994_priv *wm8994 = codec_->drvdata;
++#else
+ 	struct wm8994_priv *wm8994 = codec_->private_data;
++#endif
+ 	// depends on the output path in order to preserve mono downmixing
+ 	// on speaker
++#ifdef GALAXY_TAB
+ 	if (wm8994->cur_path != SPK && wm8994->cur_path != RING_SPK &&
+ 		wm8994->fmradio_path != FMR_SPK && wm8994->fmradio_path != FMR_SPK_MIX)
++#else
++	if (wm8994->cur_path != SPK && wm8994->cur_path != RING_SPK)
++#endif
+ 	{
+ 		if (mono_downmix)
+ 			val |= WM8994_AIF1DAC1_MONO;
+@@ -611,14 +616,26 @@ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int
+ {
+ 	// modify some registers before those being written to the codec
+ 
++#ifdef NEXUS_S
++	struct wm8994_priv *wm8994 = codec->drvdata;
++#else
+ 	struct wm8994_priv *wm8994 = codec->private_data;
++#endif
+ 	// be sure our pointer to codec is up to date
+ 	codec_ = codec;
+ 
+ 	if (! bypass_write_hook)
+ 	{
+ #ifdef CONFIG_SND_VOODOO_HP_LEVEL_CONTROL
++#ifdef NEXUS_S
++		if (wm8994->cur_path == HP || wm8994->cur_path == HP_NO_MIC)
++#else
++#ifdef GALAXY_TAB
++		if (wm8994->cur_path == HP3P || wm8994->cur_path == HP4P || wm8994->fmradio_path == FMR_HP)
++#else
+ 		if (wm8994->cur_path == HP || wm8994->fmradio_path == FMR_HP)
++#endif
++#endif
+ 		{
+ 			if (reg == WM8994_LEFT_OUTPUT_VOLUME)
+ 				value = (WM8994_HPOUT1_VU | WM8994_HPOUT1L_MUTE_N | hplvol);
+@@ -637,15 +654,21 @@ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int
+ #ifdef CONFIG_SND_VOODOO_DEBUG_LOG
+ 	// log every write to dmesg
+ 	printk("Voodoo sound: wm8994_write register= [%X] value= [%X]\n", reg, value);
++#ifdef NEXUS_S
++	printk("Voodoo sound: cur_path=%i, rec_path=%i, power_state=%i\n",
++		wm8994->cur_path, wm8994->rec_path, wm8994->power_state);
++#else
+ 	printk("Voodoo sound: cur_path=%i, rec_path=%i, fmradio_path=%i, fmr_mix_path=%i, power_state=%i, recognition_active=%i, ringtone_active=%i\n",
+ 		wm8994->cur_path, wm8994->rec_path, wm8994->fmradio_path, wm8994->fmr_mix_path, wm8994->power_state, wm8994->recognition_active, wm8994->ringtone_active);
+ #endif
++#endif
+ 	return value;
+ }
+ 
+ 
+ void voodoo_hook_wm8994_pcm_probe(struct snd_soc_codec *codec)
+ {
++	printk("Voodoo sound: driver v%d\n", VOODOO_SOUND_VERSION);
+ 	misc_register(&voodoo_sound_device);
+ 	if (sysfs_create_group(&voodoo_sound_device.this_device->kobj, &voodoo_sound_group) < 0)
+ 	{
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.h b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+index 0b8e63e..b52e19c 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.h
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+@@ -20,3 +20,11 @@ void update_osr128(void);
+ void update_fll_tuning(void);
+ unsigned short tune_fll_value(unsigned short val);
+ void update_mono_downmix(void);
++
++#ifdef CONFIG_MACH_HERRING
++#define NEXUS_S
++#endif
++
++#ifdef CONFIG_FB_S3C_AMS701KA
++#define GALAXY_TAB
++#endif
+-- 
+1.7.4.3
+

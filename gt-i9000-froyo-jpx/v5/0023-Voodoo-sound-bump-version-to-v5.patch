@@ -1,0 +1,25 @@
+From 3000bcc7888785caaf45175172721a1f7c20705a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Thu, 17 Mar 2011 07:23:38 +0100
+Subject: [PATCH 23/33] Voodoo sound: bump version to v5
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 9cf877a..8d0f117 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -21,7 +21,7 @@
+ #endif
+ 
+ #define SUBJECT "wm8994_voodoo.c"
+-#define VOODOO_SOUND_VERSION 4
++#define VOODOO_SOUND_VERSION 5
+ 
+ bool bypass_write_hook = false;
+ 
+-- 
+1.7.4.3
+

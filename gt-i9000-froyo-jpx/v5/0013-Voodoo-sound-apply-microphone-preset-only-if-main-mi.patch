@@ -1,0 +1,219 @@
+From 0a68b08060a43a32cf11b13aafc0ff0fa8627b0b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Mon, 14 Mar 2011 07:15:10 +0100
+Subject: [PATCH 13/33] Voodoo sound: apply microphone preset only if main microphone path is active
+
+---
+ Kernel/sound/soc/codecs/wm8994_voodoo.c |  160 ++++++++++++++++--------------
+ Kernel/sound/soc/codecs/wm8994_voodoo.h |    3 +-
+ 2 files changed, 87 insertions(+), 76 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.c b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+index 70fda71..6a2b883 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.c
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.c
+@@ -193,83 +193,86 @@ void update_fm_radio_headset_normalize_gain(bool with_mute)
+ #ifdef CONFIG_SND_VOODOO_RECORD_PRESETS
+ void update_recording_preset(bool with_mute)
+ {
+-	switch (recording_preset)
++	if (is_path(MAIN_MICROPHONE))
+ 	{
+-		case 0:
++		switch (recording_preset)
+ 		{
++			case 0:
++			{
+ #ifdef NEXUS_S
+-			printk("Voodoo sound: Nexus S original microphone gain: %X\n", original_record_gain);
+-#endif
+-			// Original:
+-			// On Galaxy S: IN1L_VOL1=11000 (+19.5 dB)
+-			// On Nexus S: variable value
+-			wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, original_record_gain);
+-			wm8994_write(codec_, WM8994_INPUT_MIXER_3, 0x30);
+-			// DRC disabled
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x0080);
+-			break;
+-		}
+-		case 2:
+-		{
+-			// High sensitivy: Original - 4.5 dB, IN1L_VOL1=10101 (+15 dB)
+-			wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, 0x0115);
+-			wm8994_write(codec_, WM8994_INPUT_MIXER_3, 0x30);
+-			// DRC Input: -6dB, Ouptut -3.75dB
+-			//     Above knee 1/8, Below knee 1/2
+-			//     Max gain 24 / Min gain -12
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x009A);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_2, 0x0426);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_3, 0x0019);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_4, 0x0105);
+-			break;
+-		}
+-		case 3:
+-		{
+-			// Concert new: IN1L_VOL1=10110 (+4.5 dB)
+-			// +30dB input mixer gain deactivated
+-			wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, 0x010F);
+-			wm8994_write(codec_, WM8994_INPUT_MIXER_3, 0x20);
+-			// DRC Input: -4.5dB, Ouptut -6.75dB
+-			//     Above knee 1/4, Below knee 1/2
+-			//     Max gain 24 / Min gain -12
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x009A);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_2, 0x0846);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_3, 0x0011);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_4, 0x00C9);
+-			break;
+-		}
+-		case 4:
+-		{
+-			// ULTRA LOUD: Original - 36 dB - 30 dB IN1L_VOL1=00000 (-16.5 dB)
+-			// +30dB input mixer gain deactivated
+-			wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, 0x0100);
+-			wm8994_write(codec_, WM8994_INPUT_MIXER_3, 0x20);
+-			// DRC Input: -7.5dB, Ouptut -6dB
+-			//     Above knee 1/8, Below knee 1/4
+-			//     Max gain 36 / Min gain -12
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x009A);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_2, 0x0847);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_3, 0x001A);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_4, 0x00C9);
+-			break;
+-		}
+-		default:
+-		{
+-			// make sure recording_preset is the default
+-			recording_preset = 1;
+-			// New Balanced: Original - 16.5 dB
+-			// IN1L_VOL1=01101 (+27 dB)
+-			// +30dB input mixer gain deactivated
+-			wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, 0x055D);
+-			wm8994_write(codec_, WM8994_INPUT_MIXER_3, 0x20);
+-			// DRC Input: -18.5dB, Ouptut -9dB
+-			//     Above knee 1/8, Below knee 1/2
+-			//     Max gain 18 / Min gain -12
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x009A);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_2, 0x0845);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_3, 0x0019);
+-			wm8994_write(codec_, WM8994_AIF1_DRC1_4, 0x030C);
+-			break;
++				printk("Voodoo sound: Nexus S original microphone gain: %X\n", original_record_gain);
++#endif
++				// Original:
++				// On Galaxy S: IN1L_VOL1=11000 (+19.5 dB)
++				// On Nexus S: variable value
++				wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, original_record_gain);
++				wm8994_write(codec_, WM8994_INPUT_MIXER_3, 0x30);
++				// DRC disabled
++				wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x0080);
++				break;
++			}
++			case 2:
++			{
++				// High sensitivy: Original - 4.5 dB, IN1L_VOL1=10101 (+15 dB)
++				wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, 0x0115);
++				wm8994_write(codec_, WM8994_INPUT_MIXER_3, 0x30);
++				// DRC Input: -6dB, Ouptut -3.75dB
++				//     Above knee 1/8, Below knee 1/2
++				//     Max gain 24 / Min gain -12
++				wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x009A);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_2, 0x0426);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_3, 0x0019);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_4, 0x0105);
++				break;
++			}
++			case 3:
++			{
++				// Concert new: IN1L_VOL1=10110 (+4.5 dB)
++				// +30dB input mixer gain deactivated
++				wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, 0x010F);
++				wm8994_write(codec_, WM8994_INPUT_MIXER_3, 0x20);
++				// DRC Input: -4.5dB, Ouptut -6.75dB
++				//     Above knee 1/4, Below knee 1/2
++				//     Max gain 24 / Min gain -12
++				wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x009A);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_2, 0x0846);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_3, 0x0011);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_4, 0x00C9);
++				break;
++			}
++			case 4:
++			{
++				// ULTRA LOUD: Original - 36 dB - 30 dB IN1L_VOL1=00000 (-16.5 dB)
++				// +30dB input mixer gain deactivated
++				wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, 0x0100);
++				wm8994_write(codec_, WM8994_INPUT_MIXER_3, 0x20);
++				// DRC Input: -7.5dB, Ouptut -6dB
++				//     Above knee 1/8, Below knee 1/4
++				//     Max gain 36 / Min gain -12
++				wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x009A);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_2, 0x0847);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_3, 0x001A);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_4, 0x00C9);
++				break;
++			}
++			default:
++			{
++				// make sure recording_preset is the default
++				recording_preset = 1;
++				// New Balanced: Original - 16.5 dB
++				// IN1L_VOL1=01101 (+27 dB)
++				// +30dB input mixer gain deactivated
++				wm8994_write(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME, 0x055D);
++				wm8994_write(codec_, WM8994_INPUT_MIXER_3, 0x20);
++				// DRC Input: -18.5dB, Ouptut -9dB
++				//     Above knee 1/8, Below knee 1/2
++				//     Max gain 18 / Min gain -12
++				wm8994_write(codec_, WM8994_AIF1_DRC1_1, 0x009A);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_2, 0x0845);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_3, 0x0019);
++				wm8994_write(codec_, WM8994_AIF1_DRC1_4, 0x030C);
++				break;
++			}
+ 		}
+ 	}
+ }
+@@ -306,6 +309,14 @@ bool is_path(int unified_path)
+ #endif
+ 				return true;
+ 
++
++		// headphones
++		// FIXME: be sure dac_direct doesn't break phone calls on TAB
++		// with these spath detection settings (HP4P)
++		case MAIN_MICROPHONE:
++			if (wm8994->rec_path == MAIN)
++				return true;
++
+ 	}
+ 	return false;
+ }
+@@ -695,7 +706,6 @@ void voodoo_hook_fmradio_headset()
+ #ifdef CONFIG_SND_VOODOO_RECORD_PRESETS
+ void voodoo_hook_record_main_mic()
+ {
+-
+ 	original_record_gain = wm8994_read(codec_, WM8994_LEFT_LINE_INPUT_1_2_VOLUME);
+ 	update_recording_preset(false);
+ }
+diff --git a/Kernel/sound/soc/codecs/wm8994_voodoo.h b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+index 742c7e3..ce087bb 100644
+--- a/Kernel/sound/soc/codecs/wm8994_voodoo.h
++++ b/Kernel/sound/soc/codecs/wm8994_voodoo.h
+@@ -6,6 +6,7 @@
+  * published by the Free Software Foundation.
+  */
+ 
++bool is_path(int unified_path);
+ void voodoo_hook_fmradio_headset(void);
+ unsigned int voodoo_hook_wm8994_write(struct snd_soc_codec *codec, unsigned int reg, unsigned int value);
+ void voodoo_hook_wm8994_pcm_probe(struct snd_soc_codec *codec);
+@@ -31,4 +32,4 @@ unsigned short tune_fll_value(unsigned short val);
+ #define GALAXY_TAB
+ #endif
+ 
+-enum unified_path { HEADPHONES, SPEAKER };
++enum unified_path { HEADPHONES, SPEAKER, MAIN_MICROPHONE };
+-- 
+1.7.4.3
+

@@ -1,0 +1,25 @@
+From 38da20977c7f81963c6f793e6a1d217f125ddd3f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Tue, 15 Mar 2011 10:16:46 +0100
+Subject: [PATCH 20/33] Voodoo sound: disable FM radio stuff by default on Also on Captivate and Epic4G
+
+---
+ Kernel/sound/soc/codecs/Kconfig.voodoo |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/Kconfig.voodoo b/Kernel/sound/soc/codecs/Kconfig.voodoo
+index 7c2bc90..0edc151 100644
+--- a/Kernel/sound/soc/codecs/Kconfig.voodoo
++++ b/Kernel/sound/soc/codecs/Kconfig.voodoo
+@@ -39,7 +39,7 @@ config SND_VOODOO_RECORD_PRESETS
+ config SND_VOODOO_FM
+ 	bool "FM radio: restore a normal frequency response"
+ 	depends on SND_VOODOO && SND_ARIES_SOC_WM8994
+-	default n if S5PC110_T959_BOARD=y
++	default n if S5PC110_T959_BOARD=y || S5PC110_KEPLER_BOARD=y || S5PV210_VICTORY=y
+ 	default y
+ 	help
+ 	  Adds a control to enable or disable the high-pass filter on FM radio
+-- 
+1.7.4.3
+

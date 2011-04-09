@@ -1,0 +1,24 @@
+From b41b3eb587cb5359ac93f141e28b7f3fef21f63d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?SIMOND=20Fran=C3=A7ois?= <francois@lienweb.fr>
+Date: Tue, 15 Mar 2011 06:01:06 +0100
+Subject: [PATCH 19/33] Voodoo sound: disable FM radio stuff by default on T959 Vibrant
+
+---
+ Kernel/sound/soc/codecs/Kconfig.voodoo |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/Kernel/sound/soc/codecs/Kconfig.voodoo b/Kernel/sound/soc/codecs/Kconfig.voodoo
+index 32a2672..7c2bc90 100644
+--- a/Kernel/sound/soc/codecs/Kconfig.voodoo
++++ b/Kernel/sound/soc/codecs/Kconfig.voodoo
+@@ -39,6 +39,7 @@ config SND_VOODOO_RECORD_PRESETS
+ config SND_VOODOO_FM
+ 	bool "FM radio: restore a normal frequency response"
+ 	depends on SND_VOODOO && SND_ARIES_SOC_WM8994
++	default n if S5PC110_T959_BOARD=y
+ 	default y
+ 	help
+ 	  Adds a control to enable or disable the high-pass filter on FM radio
+-- 
+1.7.4.3
+
